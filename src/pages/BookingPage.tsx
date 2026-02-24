@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { mockBikes } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Zap, Clock, DollarSign } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, Zap, Clock, DollarSign, CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const BookingPage = () => {
   const { bikeId } = useParams();
   const navigate = useNavigate();
   const bike = mockBikes.find((b) => b.id === bikeId);
   const [duration, setDuration] = useState(1);
+  const [rentalDate, setRentalDate] = useState<Date>();
 
   if (!bike || bike.status !== "AVAILABLE") {
     return (
@@ -25,7 +30,7 @@ const BookingPage = () => {
 
   const handleConfirm = () => {
     navigate("/booking/confirmation", {
-      state: { bikeName: bike.name, duration, totalCost, bikeId: bike.id },
+      state: { bikeName: bike.name, duration, totalCost, bikeId: bike.id, rentalDate: rentalDate ? format(rentalDate, "PPP") : "Not selected" },
     });
   };
 
@@ -52,6 +57,35 @@ const BookingPage = () => {
         </div>
 
         <div className="mt-8 space-y-6">
+          {/* Rental Date */}
+          <div className="space-y-2">
+            <Label className="text-base">Rental Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !rentalDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {rentalDate ? format(rentalDate, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={rentalDate}
+                  onSelect={setRentalDate}
+                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <div className="space-y-2">
             <Label className="text-base">Rental Duration (hours)</Label>
             <div className="flex items-center gap-4">
