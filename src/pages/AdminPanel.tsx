@@ -100,7 +100,7 @@ const AdminPanel = () => {
                   <Input value={newBike.name} onChange={(e) => setNewBike({ ...newBike, name: e.target.value })} placeholder="Bike name" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Price/Hour ($)</Label>
+                  <Label>Price/Hour (₱)</Label>
                   <Input type="number" value={newBike.pricePerHour} onChange={(e) => setNewBike({ ...newBike, pricePerHour: parseFloat(e.target.value) || 0 })} />
                 </div>
                 <div className="space-y-2">
@@ -140,7 +140,7 @@ const AdminPanel = () => {
                   <Input value={editingBike.name} onChange={(e) => setEditingBike({ ...editingBike, name: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Price/Hour ($)</Label>
+                  <Label>Price/Hour (₱)</Label>
                   <Input type="number" value={editingBike.pricePerHour} onChange={(e) => setEditingBike({ ...editingBike, pricePerHour: parseFloat(e.target.value) || 0 })} />
                 </div>
                 <div className="space-y-2">
@@ -188,7 +188,7 @@ const AdminPanel = () => {
                     <tr key={bike.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-4 font-medium text-foreground">{bike.name}</td>
                       <td className="px-6 py-4 text-muted-foreground">{bike.batteryLevel}%</td>
-                      <td className="px-6 py-4 text-muted-foreground">${bike.pricePerHour}</td>
+                      <td className="px-6 py-4 text-muted-foreground">₱{bike.pricePerHour}</td>
                       <td className="px-6 py-4">
                         <select
                           value={bike.status}
@@ -253,7 +253,7 @@ const AdminPanel = () => {
                       <td className="px-6 py-4 font-mono text-sm text-muted-foreground">{b.id}</td>
                       <td className="px-6 py-4 font-medium text-foreground">{b.bikeName}</td>
                       <td className="px-6 py-4 text-muted-foreground">{b.rentalDuration}h</td>
-                      <td className="px-6 py-4 font-medium text-foreground">${b.totalCost.toFixed(2)}</td>
+                      <td className="px-6 py-4 font-medium text-foreground">₱{b.totalCost.toFixed(2)}</td>
                       <td className="px-6 py-4">
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           b.bookingStatus === "ACTIVE" ? "bg-success/15 text-success"

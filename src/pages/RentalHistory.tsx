@@ -44,7 +44,7 @@ const RentalHistory = () => {
                 </div>
                 <div className="flex items-center gap-1.5 text-sm">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-display font-semibold text-foreground">${booking.totalCost.toFixed(2)}</span>
+                  <span className="font-display font-semibold text-foreground">₱{booking.totalCost.toFixed(2)}</span>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[booking.bookingStatus]}`}>
                   {booking.bookingStatus}
