@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Zap, Menu, X, User, LogOut, Shield } from "lucide-react";
 import { useState } from "react";
 
@@ -75,10 +76,24 @@ const Navbar = () => {
               </span>
             )}
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="mr-1.5 h-4 w-4" />
-            Logout
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <LogOut className="mr-1.5 h-4 w-4" />
+                Logout
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+                <AlertDialogDescription>You will need to sign in again to access your account.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>No, stay</AlertDialogCancel>
+                <AlertDialogAction onClick={handleLogout}>Yes, logout</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {/* Mobile toggle */}
@@ -112,12 +127,23 @@ const Navbar = () => {
                 Admin Panel
               </Link>
             )}
-            <button
-              onClick={() => { handleLogout(); setMobileOpen(false); }}
-              className="mt-2 rounded-lg px-4 py-2.5 text-left text-sm font-medium text-destructive"
-            >
-              Logout
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="mt-2 rounded-lg px-4 py-2.5 text-left text-sm font-medium text-destructive">
+                  Logout
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+                  <AlertDialogDescription>You will need to sign in again to access your account.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>No, stay</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => { handleLogout(); setMobileOpen(false); }}>Yes, logout</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </nav>
         </div>
       )}
