@@ -3,10 +3,11 @@ import { mockBikes, mockBookings } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bike, BikeStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, Plus, CheckCircle2, Bike as BikeIcon, ClipboardList } from "lucide-react";
+import { Pencil, Trash2, Plus, CheckCircle2, Bike as BikeIcon, ClipboardList, ImagePlus } from "lucide-react";
 
 const AdminPanel = () => {
   const [bikes, setBikes] = useState<Bike[]>([...mockBikes]);
@@ -15,7 +16,15 @@ const AdminPanel = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const { toast } = useToast();
 
-  const [newBike, setNewBike] = useState({ name: "", batteryLevel: 100, pricePerHour: 5, description: "" });
+  const [newBike, setNewBike] = useState({ name: "", batteryLevel: 100, pricePerHour: 5, description: "", image: "" });
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: "new" | "edit") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    if (target === "new") setNewBike({ ...newBike, image: url });
+    else if (editingBike) setEditingBike({ ...editingBike, image: url });
+  };
 
   const handleAddBike = () => {
     if (!newBike.name) return;
@@ -26,9 +35,10 @@ const AdminPanel = () => {
       pricePerHour: newBike.pricePerHour,
       status: "AVAILABLE",
       description: newBike.description,
+      image: newBike.image || undefined,
     };
     setBikes([...bikes, bike]);
-    setNewBike({ name: "", batteryLevel: 100, pricePerHour: 5, description: "" });
+    setNewBike({ name: "", batteryLevel: 100, pricePerHour: 5, description: "", image: "" });
     setShowAddForm(false);
     toast({ title: "Bike added", description: `${bike.name} has been added to the fleet.` });
   };
@@ -96,9 +106,20 @@ const AdminPanel = () => {
                   <Label>Battery Level (%)</Label>
                   <Input type="number" value={newBike.batteryLevel} onChange={(e) => setNewBike({ ...newBike, batteryLevel: parseInt(e.target.value) || 0 })} />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 sm:col-span-2">
                   <Label>Description</Label>
-                  <Input value={newBike.description} onChange={(e) => setNewBike({ ...newBike, description: e.target.value })} placeholder="Description" />
+                  <Textarea value={newBike.description} onChange={(e) => setNewBike({ ...newBike, description: e.target.value })} placeholder="Bike description" rows={3} />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Bike Image</Label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground hover:bg-muted/50 transition-colors">
+                      <ImagePlus className="h-4 w-4" />
+                      {newBike.image ? "Change image" : "Upload image"}
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, "new")} />
+                    </label>
+                    {newBike.image && <img src={newBike.image} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />}
+                  </div>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
@@ -124,6 +145,21 @@ const AdminPanel = () => {
                 <div className="space-y-2">
                   <Label>Battery Level (%)</Label>
                   <Input type="number" value={editingBike.batteryLevel} onChange={(e) => setEditingBike({ ...editingBike, batteryLevel: parseInt(e.target.value) || 0 })} />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Description</Label>
+                  <Textarea value={editingBike.description || ""} onChange={(e) => setEditingBike({ ...editingBike, description: e.target.value })} placeholder="Bike description" rows={3} />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Bike Image</Label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground hover:bg-muted/50 transition-colors">
+                      <ImagePlus className="h-4 w-4" />
+                      {editingBike.image ? "Change image" : "Upload image"}
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, "edit")} />
+                    </label>
+                    {editingBike.image && <img src={editingBike.image} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />}
+                  </div>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
