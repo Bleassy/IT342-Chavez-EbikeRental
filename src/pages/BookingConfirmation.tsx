@@ -30,7 +30,7 @@ const BookingConfirmation = () => {
           </div>
           <div className="flex justify-between border-t border-border pt-3">
             <span className="font-semibold text-foreground">Total Cost</span>
-            <span className="font-display text-xl font-bold text-primary">${state.totalCost.toFixed(2)}</span>
+            <span className="font-display text-xl font-bold text-primary">₱{state.totalCost.toFixed(2)}</span>
           </div>
         </div>
 

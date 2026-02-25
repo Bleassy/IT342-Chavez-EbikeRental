@@ -42,12 +42,12 @@ const BikeCard = ({ bike }: BikeCardProps) => {
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
-              <span>${bike.pricePerHour}/hr</span>
+              <span>₱{bike.pricePerHour}/hr</span>
             </div>
           </div>
         </div>
         <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-          <span className="font-display text-xl font-bold text-primary">${bike.pricePerHour}</span>
+          <span className="font-display text-xl font-bold text-primary">₱{bike.pricePerHour}</span>
           <span className="text-sm text-muted-foreground">per hour</span>
         </div>
       </div>

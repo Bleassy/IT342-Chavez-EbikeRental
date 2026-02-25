@@ -13,10 +13,10 @@ const Dashboard = () => {
     .reduce((sum, b) => sum + b.totalCost, 0);
 
   const stats = [
-    { label: "Available Bikes", value: availableBikes, icon: Bike, color: "text-primary" },
-    { label: "Active Rentals", value: activeBookings, icon: Activity, color: "text-accent" },
-    { label: "Total Spent", value: `$${totalSpent.toFixed(0)}`, icon: Zap, color: "text-warning" },
-    { label: "Total Rides", value: mockBookings.length, icon: Clock, color: "text-primary" },
+    { label: "Available Bikes", value: availableBikes, icon: Bike, color: "text-primary", link: "/bikes" },
+    { label: "Active Rentals", value: activeBookings, icon: Activity, color: "text-accent", link: "/bikes" },
+    { label: "Total Spent", value: `₱${totalSpent.toFixed(0)}`, icon: Zap, color: "text-warning", link: null },
+    { label: "Total Rides", value: mockBookings.length, icon: Clock, color: "text-primary", link: "/history" },
   ];
 
   return (
@@ -33,12 +33,8 @@ const Dashboard = () => {
 
       {/* Stats */}
       <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, i) => (
-          <div
-            key={stat.label}
-            className="glass-card p-6 animate-fade-up"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
+        {stats.map((stat, i) => {
+          const content = (
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
@@ -48,8 +44,26 @@ const Dashboard = () => {
                 <stat.icon className="h-6 w-6" />
               </div>
             </div>
-          </div>
-        ))}
+          );
+          return stat.link ? (
+            <Link
+              key={stat.label}
+              to={stat.link}
+              className="glass-card p-6 animate-fade-up hover:-translate-y-1 transition-transform cursor-pointer"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              {content}
+            </Link>
+          ) : (
+            <div
+              key={stat.label}
+              className="glass-card p-6 animate-fade-up"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              {content}
+            </div>
+          );
+        })}
       </div>
 
       {/* Quick Actions */}

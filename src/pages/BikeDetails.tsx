@@ -45,7 +45,7 @@ const BikeDetails = () => {
               </span>
             </div>
             <div className="text-right">
-              <p className="font-display text-4xl font-bold text-primary">${bike.pricePerHour}</p>
+              <p className="font-display text-4xl font-bold text-primary">₱{bike.pricePerHour}</p>
               <p className="text-sm text-muted-foreground">per hour</p>
             </div>
           </div>
@@ -73,7 +73,7 @@ const BikeDetails = () => {
                 <Clock className="h-5 w-5" />
                 <span className="text-sm">Rate</span>
               </div>
-              <p className="mt-1 font-display text-2xl font-bold text-foreground">${bike.pricePerHour}/hr</p>
+              <p className="mt-1 font-display text-2xl font-bold text-foreground">₱{bike.pricePerHour}/hr</p>
             </div>
           </div>
 

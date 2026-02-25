@@ -51,7 +51,7 @@ const BookingPage = () => {
             </div>
             <div>
               <h2 className="font-display text-xl font-semibold text-foreground">{bike.name}</h2>
-              <p className="text-sm text-muted-foreground">${bike.pricePerHour}/hour • Battery: {bike.batteryLevel}%</p>
+              <p className="text-sm text-muted-foreground">₱{bike.pricePerHour}/hour • Battery: {bike.batteryLevel}%</p>
             </div>
           </div>
         </div>
@@ -144,11 +144,11 @@ const BookingPage = () => {
               <span className="flex items-center gap-2 text-muted-foreground">
                 <DollarSign className="h-4 w-4" /> Rate
               </span>
-              <span className="font-medium">${bike.pricePerHour}/hr</span>
+              <span className="font-medium">₱{bike.pricePerHour}/hr</span>
             </div>
             <div className="border-t border-border pt-4 flex justify-between">
               <span className="font-display font-semibold text-foreground">Total</span>
-              <span className="font-display text-2xl font-bold text-primary">${totalCost.toFixed(2)}</span>
+              <span className="font-display text-2xl font-bold text-primary">₱{totalCost.toFixed(2)}</span>
             </div>
           </div>
 
@@ -156,7 +156,7 @@ const BookingPage = () => {
             className="w-full gradient-primary text-primary-foreground py-6 text-lg"
             onClick={handleConfirm}
           >
-            Confirm Booking — ${totalCost.toFixed(2)}
+            Confirm Booking — ₱{totalCost.toFixed(2)}
           </Button>
         </div>
       </div>
