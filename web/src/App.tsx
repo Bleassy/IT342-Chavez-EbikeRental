@@ -15,6 +15,7 @@ import BookingPage from "@/pages/BookingPage";
 import BookingConfirmation from "@/pages/BookingConfirmation";
 import RentalHistory from "@/pages/RentalHistory";
 import AdminPanel from "@/pages/AdminPanel";
+import Profile from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
 import GoogleCallback from "@/pages/GoogleCallback";
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/booking/confirmation" element={<ProtectedRoute><BookingConfirmation /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><RentalHistory /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute requiredRole="ADMIN"><AdminPanel /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

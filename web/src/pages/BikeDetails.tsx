@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { mockBikes } from "@/data/mockData";
+import { fetchBike } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Battery, Clock, Zap, ArrowLeft, AlertTriangle } from "lucide-react";
+import { Battery, Clock, Zap, ArrowLeft, AlertTriangle, Loader2 } from "lucide-react";
+import { Bike } from "@/types";
 
 const statusColors: Record<string, string> = {
   AVAILABLE: "bg-success/15 text-success",
@@ -12,7 +14,24 @@ const statusColors: Record<string, string> = {
 const BikeDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const bike = mockBikes.find((b) => b.id === id);
+  const [bike, setBike] = useState<Bike | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    fetchBike(id)
+      .then(setBike)
+      .catch(() => setBike(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="container flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!bike) {
     return (

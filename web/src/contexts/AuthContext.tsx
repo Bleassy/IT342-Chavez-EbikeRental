@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { User, AuthState, LoginData, RegisterData, UserRole } from "@/types";
+import { fetchProfile } from "@/lib/api";
 
 interface AuthContextType extends AuthState {
   login: (data: LoginData) => Promise<boolean>;
@@ -7,6 +8,7 @@ interface AuthContextType extends AuthState {
   loginWithGoogle: (idToken: string) => Promise<boolean>;
   loginWithGoogleCode: (code: string) => Promise<boolean>;
   logout: () => void;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +30,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("ebike_auth", JSON.stringify(authState));
   }, [authState]);
 
+  // Fetch full profile (including profilePictureUrl) whenever authenticated
+  const profileFetched = useRef(false);
+  useEffect(() => {
+    if (authState.isAuthenticated && authState.token && !profileFetched.current) {
+      profileFetched.current = true;
+      fetchProfile()
+        .then((p) => {
+          setAuthState((prev) => {
+            if (!prev.user) return prev;
+            return {
+              ...prev,
+              user: {
+                ...prev.user,
+                firstName: p.firstName || prev.user.firstName,
+                lastName: p.lastName || prev.user.lastName,
+                phone: p.phone || undefined,
+                address: p.address || undefined,
+                nickname: p.nickname || undefined,
+                profilePictureUrl: p.profilePictureUrl || undefined,
+              },
+            };
+          });
+        })
+        .catch(() => { /* ignore - profile fetch failed */ });
+    }
+    if (!authState.isAuthenticated) {
+      profileFetched.current = false;
+    }
+  }, [authState.isAuthenticated, authState.token]);
+
   const login = useCallback(async (data: LoginData): Promise<boolean> => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -40,16 +72,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) return false;
 
       const result = await response.json();
+      const authData = result.data || result;
       const user: User = {
-        id: result.id?.toString() || `user-${Date.now()}`,
-        username: result.email.split("@")[0],
-        email: result.email,
-        firstName: result.firstName || "User",
-        lastName: result.lastName || "",
-        role: (result.role || "USER") as UserRole,
+        id: authData.id?.toString() || `user-${Date.now()}`,
+        username: authData.email.split("@")[0],
+        email: authData.email,
+        firstName: authData.firstName || "User",
+        lastName: authData.lastName || "",
+        role: (authData.role || "USER") as UserRole,
       };
 
-      setAuthState({ user, token: result.token, isAuthenticated: true });
+      setAuthState({ user, token: authData.token, isAuthenticated: true });
+      profileFetched.current = false; // trigger profile fetch
       return true;
     } catch {
       return false;
@@ -78,8 +112,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) return false;
 
       const result = await response.json();
+      const authData = result.data || result;
       const user: User = {
-        id: result.id?.toString() || `user-${Date.now()}`,
+        id: authData.id?.toString() || `user-${Date.now()}`,
         username: data.email.split("@")[0],
         email: data.email,
         firstName: data.firstName,
@@ -87,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: "USER" as UserRole,
       };
 
-      setAuthState({ user, token: result.token, isAuthenticated: true });
+      setAuthState({ user, token: authData.token, isAuthenticated: true });
       return true;
     } catch {
       return false;
@@ -106,16 +141,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) return false;
 
       const result = await response.json();
+      const authData = result.data || result;
       const user: User = {
-        id: result.id?.toString() || `user-${Date.now()}`,
-        username: result.email.split("@")[0],
-        email: result.email,
-        firstName: result.firstName || "User",
-        lastName: result.lastName || "",
-        role: (result.role || "USER") as UserRole,
+        id: authData.id?.toString() || `user-${Date.now()}`,
+        username: authData.email.split("@")[0],
+        email: authData.email,
+        firstName: authData.firstName || "User",
+        lastName: authData.lastName || "",
+        role: (authData.role || "USER") as UserRole,
       };
 
-      setAuthState({ user, token: result.token, isAuthenticated: true });
+      setAuthState({ user, token: authData.token, isAuthenticated: true });
       return true;
     } catch {
       return false;
@@ -157,8 +193,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("ebike_auth");
   }, []);
 
+  const updateUser = useCallback((updates: Partial<User>) => {
+    setAuthState((prev) => {
+      if (!prev.user) return prev;
+      return { ...prev, user: { ...prev.user, ...updates } };
+    });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ ...authState, login, register, loginWithGoogle, loginWithGoogleCode, logout }}>
+    <AuthContext.Provider value={{ ...authState, login, register, loginWithGoogle, loginWithGoogleCode, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

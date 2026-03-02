@@ -29,6 +29,11 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String address;
 
+    private String nickname;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String profilePictureUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
@@ -77,6 +82,12 @@ public class User {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public String getNickname() { return nickname; }
+    public void setNickname(String nickname) { this.nickname = nickname; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 
     public UserRole getRole() { return role; }
     public void setRole(UserRole role) { this.role = role; }

@@ -1,15 +1,24 @@
-import { useState } from "react";
-import { mockBikes } from "@/data/mockData";
+import { useState, useEffect } from "react";
+import { fetchBikes } from "@/lib/api";
 import BikeCard from "@/components/BikeCard";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
-import { BikeStatus } from "@/types";
+import { Search, Loader2 } from "lucide-react";
+import { Bike, BikeStatus } from "@/types";
 
 const BikeList = () => {
+  const [bikes, setBikes] = useState<Bike[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<BikeStatus | "ALL">("ALL");
 
-  const filtered = mockBikes.filter((b) => {
+  useEffect(() => {
+    fetchBikes()
+      .then(setBikes)
+      .catch((err) => console.error("Failed to fetch bikes:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = bikes.filter((b) => {
     const matchSearch = b.name.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "ALL" || b.status === statusFilter;
     return matchSearch && matchStatus;
@@ -21,6 +30,14 @@ const BikeList = () => {
     { label: "Rented", value: "RENTED" },
     { label: "Maintenance", value: "MAINTENANCE" },
   ];
+
+  if (loading) {
+    return (
+      <div className="container flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container py-8">

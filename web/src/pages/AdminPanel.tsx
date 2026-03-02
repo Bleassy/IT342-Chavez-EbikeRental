@@ -1,23 +1,55 @@
-import { useState } from "react";
-import { mockBikes, mockBookings } from "@/data/mockData";
+import { useState, useEffect, useCallback } from "react";
+import {
+  fetchBikes, fetchAllBookings, createBike, updateBike, deleteBike,
+  updateBikeStatus, completeBooking, cancelBooking, confirmBooking,
+  type CreateBikePayload, type BackendBike, mapBike,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bike, BikeStatus } from "@/types";
+import { Bike, BikeStatus, Booking } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, Plus, CheckCircle2, Bike as BikeIcon, ClipboardList, ImagePlus } from "lucide-react";
+import { Pencil, Trash2, Plus, CheckCircle2, Bike as BikeIcon, ClipboardList, ImagePlus, Loader2, RefreshCw, XCircle } from "lucide-react";
+
+const POLL_INTERVAL = 5000; // 5s auto-refresh
 
 const AdminPanel = () => {
-  const [bikes, setBikes] = useState<Bike[]>([...mockBikes]);
-  const [bookings, setBookings] = useState([...mockBookings]);
+  const [bikes, setBikes] = useState<Bike[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingBike, setEditingBike] = useState<Bike | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const { toast } = useToast();
 
-  const [newBike, setNewBike] = useState({ name: "", batteryLevel: 100, pricePerHour: 5, description: "", image: "" });
+  const [newBike, setNewBike] = useState({ name: "", brand: "", model: "", batteryLevel: 100, pricePerHour: 5, description: "", image: "", color: "Black", type: "STANDARD", location: "Downtown Station" });
+  const [bikeFilter, setBikeFilter] = useState<"ALL" | BikeStatus>("ALL");
+  const [bookingFilter, setBookingFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "CANCELLED">("ALL");
+
+  const filteredBikes = bikeFilter === "ALL" ? bikes : bikes.filter((b) => b.status === bikeFilter);
+  const filteredBookings = bookingFilter === "ALL" ? bookings : bookings.filter((b) => b.bookingStatus === bookingFilter);
+
+  // Load data from API
+  const loadData = useCallback(async () => {
+    try {
+      const [b, bk] = await Promise.all([fetchBikes(), fetchAllBookings()]);
+      setBikes(b);
+      setBookings(bk);
+    } catch (err) {
+      console.error("Failed to load admin data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial load + polling for real-time updates
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: "new" | "edit") => {
     const file = e.target.files?.[0];
@@ -27,44 +59,99 @@ const AdminPanel = () => {
     else if (editingBike) setEditingBike({ ...editingBike, image: url });
   };
 
-  const handleAddBike = () => {
-    if (!newBike.name) return;
-    const bike: Bike = {
-      id: `bike-${Date.now()}`,
-      name: newBike.name,
-      batteryLevel: newBike.batteryLevel,
-      pricePerHour: newBike.pricePerHour,
-      status: "AVAILABLE",
-      description: newBike.description,
-      image: newBike.image || undefined,
+  const handleAddBike = async () => {
+    if (!newBike.name && !newBike.model) return;
+    const brand = newBike.brand || newBike.name.split(" ")[0] || "Generic";
+    const model = newBike.model || newBike.name || "Bike";
+    const code = `BIKE${Date.now().toString().slice(-6)}`;
+    const payload: CreateBikePayload = {
+      bikeCode: code, model, brand, color: newBike.color,
+      year: new Date().getFullYear(), type: newBike.type,
+      pricePerHour: newBike.pricePerHour, pricePerDay: newBike.pricePerHour * 6,
+      status: "AVAILABLE", description: newBike.description,
+      imageUrl: newBike.image || undefined, condition: "EXCELLENT",
+      batteryLevel: newBike.batteryLevel, location: newBike.location,
     };
-    setBikes([...bikes, bike]);
-    setNewBike({ name: "", batteryLevel: 100, pricePerHour: 5, description: "", image: "" });
-    setShowAddForm(false);
-    toast({ title: "Bike added", description: `${bike.name} has been added to the fleet.` });
+    try {
+      await createBike(payload);
+      toast({ title: "Bike added", description: `${brand} ${model} has been added to the fleet.` });
+      setNewBike({ name: "", brand: "", model: "", batteryLevel: 100, pricePerHour: 5, description: "", image: "", color: "Black", type: "STANDARD", location: "Downtown Station" });
+      setShowAddForm(false);
+      loadData();
+    } catch (err) {
+      toast({ title: "Failed to add bike", variant: "destructive" });
+    }
   };
 
-  const handleDeleteBike = (id: string) => {
-    setBikes(bikes.filter((b) => b.id !== id));
-    toast({ title: "Bike removed", description: "Bike has been removed from the fleet." });
+  const handleDeleteBike = async (id: string) => {
+    try {
+      await deleteBike(id);
+      toast({ title: "Bike removed", description: "Bike has been removed from the fleet." });
+      loadData();
+    } catch (err) {
+      toast({ title: "Failed to delete bike", variant: "destructive" });
+    }
   };
 
-  const handleStatusChange = (id: string, status: BikeStatus) => {
-    setBikes(bikes.map((b) => (b.id === id ? { ...b, status } : b)));
-    toast({ title: "Status updated" });
+  const handleStatusChange = async (id: string, status: BikeStatus) => {
+    try {
+      await updateBikeStatus(id, status);
+      toast({ title: "Status updated" });
+      loadData();
+    } catch (err) {
+      toast({ title: "Failed to update status", variant: "destructive" });
+    }
   };
 
-  const handleCompleteBooking = (id: string) => {
-    setBookings(bookings.map((b) => (b.id === id ? { ...b, bookingStatus: "COMPLETED" as const } : b)));
-    toast({ title: "Booking completed" });
+  const handleCompleteBooking = async (id: string) => {
+    try {
+      await completeBooking(id);
+      toast({ title: "Booking completed" });
+      loadData();
+    } catch (err) {
+      toast({ title: "Failed to complete booking", variant: "destructive" });
+    }
   };
 
-  const handleUpdateBike = () => {
+  const handleCancelBooking = async (id: string) => {
+    try {
+      await cancelBooking(id);
+      toast({ title: "Booking cancelled" });
+      loadData();
+    } catch (err) {
+      toast({ title: "Failed to cancel booking", variant: "destructive" });
+    }
+  };
+
+  const handleUpdateBike = async () => {
     if (!editingBike) return;
-    setBikes(bikes.map((b) => (b.id === editingBike.id ? editingBike : b)));
-    setEditingBike(null);
-    toast({ title: "Bike updated" });
+    // Parse brand/model from display name
+    const parts = editingBike.name.split(" ");
+    const brand = parts[0] || "Generic";
+    const model = parts.slice(1).join(" ") || editingBike.name;
+    try {
+      await updateBike(editingBike.id, {
+        model, brand,
+        pricePerHour: editingBike.pricePerHour,
+        batteryLevel: editingBike.batteryLevel,
+        description: editingBike.description || "",
+        imageUrl: editingBike.image,
+      });
+      setEditingBike(null);
+      toast({ title: "Bike updated" });
+      loadData();
+    } catch (err) {
+      toast({ title: "Failed to update bike", variant: "destructive" });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="container flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container py-8">
@@ -84,10 +171,33 @@ const AdminPanel = () => {
         </TabsList>
 
         <TabsContent value="bikes">
-          <div className="mb-6 flex justify-end">
+          <div className="mb-4 flex justify-between">
+            <Button variant="outline" size="sm" onClick={loadData}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+            </Button>
             <Button className="gradient-primary text-primary-foreground" onClick={() => setShowAddForm(!showAddForm)}>
               <Plus className="mr-2 h-4 w-4" /> Add Bike
             </Button>
+          </div>
+
+          {/* Status Filters */}
+          <div className="mb-6 flex flex-wrap gap-2">
+            {(["ALL", "AVAILABLE", "RENTED", "MAINTENANCE"] as const).map((status) => {
+              const count = status === "ALL" ? bikes.length : bikes.filter((b) => b.status === status).length;
+              const isActive = bikeFilter === status;
+              return (
+                <Button
+                  key={status}
+                  size="sm"
+                  variant={isActive ? "default" : "outline"}
+                  className={isActive ? "gradient-primary text-primary-foreground" : ""}
+                  onClick={() => setBikeFilter(status)}
+                >
+                  {status === "ALL" ? "All" : status === "AVAILABLE" ? "Available" : status === "RENTED" ? "Rented" : "Maintenance"}
+                  <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${isActive ? "bg-white/20" : "bg-muted"}`}>{count}</span>
+                </Button>
+              );
+            })}
           </div>
 
           {/* Add Form */}
@@ -96,8 +206,12 @@ const AdminPanel = () => {
               <h3 className="font-display text-lg font-semibold mb-4">Add New Bike</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={newBike.name} onChange={(e) => setNewBike({ ...newBike, name: e.target.value })} placeholder="Bike name" />
+                  <Label>Brand</Label>
+                  <Input value={newBike.brand} onChange={(e) => setNewBike({ ...newBike, brand: e.target.value })} placeholder="e.g. Trek" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Model</Label>
+                  <Input value={newBike.model} onChange={(e) => setNewBike({ ...newBike, model: e.target.value })} placeholder="e.g. Mountain Pro X" />
                 </div>
                 <div className="space-y-2">
                   <Label>Price/Hour (₱)</Label>
@@ -184,7 +298,7 @@ const AdminPanel = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {bikes.map((bike) => (
+                  {filteredBikes.map((bike) => (
                     <tr key={bike.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-4 font-medium text-foreground">{bike.name}</td>
                       <td className="px-6 py-4 text-muted-foreground">{bike.batteryLevel}%</td>
@@ -233,28 +347,73 @@ const AdminPanel = () => {
         </TabsContent>
 
         <TabsContent value="bookings">
+          <div className="mb-4 flex justify-start">
+            <Button variant="outline" size="sm" onClick={loadData}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+            </Button>
+            <span className="ml-3 self-center text-xs text-muted-foreground">Auto-refreshes every 5s</span>
+          </div>
+
+          {/* Booking Status Filters */}
+          <div className="mb-6 flex flex-wrap gap-2">
+            {(["ALL", "ACTIVE", "COMPLETED", "CANCELLED"] as const).map((status) => {
+              const count = status === "ALL" ? bookings.length : bookings.filter((b) => b.bookingStatus === status).length;
+              const isActive = bookingFilter === status;
+              return (
+                <Button
+                  key={status}
+                  size="sm"
+                  variant={isActive ? "default" : "outline"}
+                  className={isActive ? (
+                    status === "ACTIVE" ? "bg-green-600 hover:bg-green-700 text-white"
+                    : status === "COMPLETED" ? "bg-gray-600 hover:bg-gray-700 text-white"
+                    : status === "CANCELLED" ? "bg-red-600 hover:bg-red-700 text-white"
+                    : "gradient-primary text-primary-foreground"
+                  ) : ""}
+                  onClick={() => setBookingFilter(status)}
+                >
+                  {status === "ALL" ? "All" : status === "ACTIVE" ? "Active" : status === "COMPLETED" ? "Completed" : "Cancelled"}
+                  <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${isActive ? "bg-white/20" : "bg-muted"}`}>{count}</span>
+                </Button>
+              );
+            })}
+          </div>
           <div className="glass-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Bike</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Duration</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Total</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Date</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase text-muted-foreground">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">User</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Bike</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Schedule</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Duration</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Total</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Booked On</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.map((b) => (
+                  {filteredBookings.map((b) => (
                     <tr key={b.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="px-6 py-4 font-mono text-sm text-muted-foreground">{b.id}</td>
-                      <td className="px-6 py-4 font-medium text-foreground">{b.bikeName}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{b.rentalDuration}h</td>
-                      <td className="px-6 py-4 font-medium text-foreground">₱{b.totalCost.toFixed(2)}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4 font-mono text-sm text-muted-foreground">{b.id}</td>
+                      <td className="px-4 py-4">
+                        <div className="font-medium text-foreground">{b.userName || "Unknown"}</div>
+                        <div className="text-xs text-muted-foreground">{b.userEmail || ""}</div>
+                      </td>
+                      <td className="px-4 py-4 font-medium text-foreground">{b.bikeName}</td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground">
+                        {b.startTime && (
+                          <div>
+                            <div>{new Date(b.startTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })} {new Date(b.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</div>
+                            <div className="text-xs">to {b.endTime && new Date(b.endTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-muted-foreground">{b.rentalDuration}h</td>
+                      <td className="px-4 py-4 font-medium text-foreground">₱{b.totalCost.toFixed(2)}</td>
+                      <td className="px-4 py-4">
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           b.bookingStatus === "ACTIVE" ? "bg-success/15 text-success"
                           : b.bookingStatus === "COMPLETED" ? "bg-muted text-muted-foreground"
@@ -263,14 +422,19 @@ const AdminPanel = () => {
                           {b.bookingStatus}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {new Date(b.createdAt).toLocaleDateString()}
+                      <td className="px-4 py-4 text-sm text-muted-foreground">
+                        {new Date(b.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-4 text-right">
                         {b.bookingStatus === "ACTIVE" && (
-                          <Button size="sm" variant="outline" onClick={() => handleCompleteBooking(b.id)}>
-                            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Complete
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => handleCompleteBooking(b.id)}>
+                              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Complete
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleCancelBooking(b.id)}>
+                              <XCircle className="mr-1.5 h-3.5 w-3.5" /> Cancel
+                            </Button>
+                          </div>
                         )}
                       </td>
                     </tr>

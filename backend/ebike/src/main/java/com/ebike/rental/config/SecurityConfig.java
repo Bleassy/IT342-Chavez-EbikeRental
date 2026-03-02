@@ -56,7 +56,7 @@ public class SecurityConfig {
                                 "/bikes/**"
                         ).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/bookings/**", "/payments/**").authenticated()
+                        .requestMatchers("/bookings/**", "/payments/**", "/profile/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

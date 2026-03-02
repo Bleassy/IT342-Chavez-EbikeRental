@@ -1,12 +1,14 @@
 -- Sample Data for E-Bike Rental System
 
--- Insert Sample Users
+-- Insert Sample Users (passwords are BCrypt hashed)
+-- admin@ebike.com / admin123
+-- All other users / password123
 INSERT INTO users (email, password, first_name, last_name, phone, address, role, is_active, created_at, updated_at) VALUES
-('admin@ebike.com', 'admin123', 'Admin', 'User', '9999999999', 'Admin Office', 'ADMIN', true, NOW(), NOW()),
-('john.doe@example.com', 'password123', 'John', 'Doe', '9876543210', '123 Main St', 'USER', true, NOW(), NOW()),
-('jane.smith@example.com', 'password123', 'Jane', 'Smith', '9876543211', '456 Oak Ave', 'USER', true, NOW(), NOW()),
-('mike.johnson@example.com', 'password123', 'Mike', 'Johnson', '9876543212', '789 Pine Rd', 'USER', true, NOW(), NOW()),
-('sarah.williams@example.com', 'password123', 'Sarah', 'Williams', '9876543213', '321 Elm St', 'USER', true, NOW(), NOW());
+('admin@ebike.com', '$2a$10$nuhYs9dLKhPaGK6IsrtqmOi3rSRqpiVHymA1oogL5Gv0m7G15AhHO', 'Admin', 'User', '9999999999', 'Admin Office', 'ADMIN', true, NOW(), NOW()),
+('john.doe@example.com', '$2a$10$a7Dd4OsKlA3/dAlMOKMtRe/5meIMNfyZnl4NmUQ6XHaxk/.owJpkm', 'John', 'Doe', '9876543210', '123 Main St', 'USER', true, NOW(), NOW()),
+('jane.smith@example.com', '$2a$10$a7Dd4OsKlA3/dAlMOKMtRe/5meIMNfyZnl4NmUQ6XHaxk/.owJpkm', 'Jane', 'Smith', '9876543211', '456 Oak Ave', 'USER', true, NOW(), NOW()),
+('mike.johnson@example.com', '$2a$10$a7Dd4OsKlA3/dAlMOKMtRe/5meIMNfyZnl4NmUQ6XHaxk/.owJpkm', 'Mike', 'Johnson', '9876543212', '789 Pine Rd', 'USER', true, NOW(), NOW()),
+('sarah.williams@example.com', '$2a$10$a7Dd4OsKlA3/dAlMOKMtRe/5meIMNfyZnl4NmUQ6XHaxk/.owJpkm', 'Sarah', 'Williams', '9876543213', '321 Elm St', 'USER', true, NOW(), NOW());
 
 -- Insert Sample Bikes
 INSERT INTO bikes (bike_code, model, brand, color, year, type, price_per_hour, price_per_day, status, description, image_url, condition, battery_level, location, created_at, updated_at) VALUES

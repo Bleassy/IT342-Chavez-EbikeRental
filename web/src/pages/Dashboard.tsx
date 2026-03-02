@@ -1,22 +1,46 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { mockBikes, mockBookings } from "@/data/mockData";
+import { fetchBikes, fetchUserBookings } from "@/lib/api";
 import { Link } from "react-router-dom";
-import { Bike, Zap, Clock, Activity, ArrowRight } from "lucide-react";
+import { Bike as BikeIcon, Zap, Clock, Activity, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Bike, Booking } from "@/types";
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const availableBikes = mockBikes.filter((b) => b.status === "AVAILABLE").length;
-  const activeBookings = mockBookings.filter((b) => b.bookingStatus === "ACTIVE").length;
-  const totalSpent = mockBookings
+  const [bikes, setBikes] = useState<Bike[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [b, bk] = await Promise.all([
+          fetchBikes(),
+          user ? fetchUserBookings(user.id) : Promise.resolve([]),
+        ]);
+        setBikes(b);
+        setBookings(bk);
+      } catch (err) {
+        console.error("Failed to load dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [user]);
+
+  const availableBikes = bikes.filter((b) => b.status === "AVAILABLE").length;
+  const activeBookings = bookings.filter((b) => b.bookingStatus === "ACTIVE").length;
+  const totalSpent = bookings
     .filter((b) => b.bookingStatus === "COMPLETED")
     .reduce((sum, b) => sum + b.totalCost, 0);
 
   const stats = [
-    { label: "Available Bikes", value: availableBikes, icon: Bike, color: "text-primary", link: "/bikes" },
-    { label: "Active Rentals", value: activeBookings, icon: Activity, color: "text-accent", link: "/bikes" },
-    { label: "Total Spent", value: `₱${totalSpent.toFixed(0)}`, icon: Zap, color: "text-warning", link: null },
-    { label: "Total Rides", value: mockBookings.length, icon: Clock, color: "text-primary", link: "/history" },
+    { label: "Available Bikes", value: loading ? "..." : availableBikes, icon: BikeIcon, color: "text-primary", link: "/bikes" },
+    { label: "Active Rentals", value: loading ? "..." : activeBookings, icon: Activity, color: "text-accent", link: "/bikes" },
+    { label: "Total Spent", value: loading ? "..." : `₱${totalSpent.toFixed(0)}`, icon: Zap, color: "text-warning", link: null },
+    { label: "Total Rides", value: loading ? "..." : bookings.length, icon: Clock, color: "text-primary", link: "/history" },
   ];
 
   return (

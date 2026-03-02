@@ -137,6 +137,8 @@ public class BookingService {
         BookingDTO dto = new BookingDTO();
         dto.setId(booking.getId());
         dto.setUserId(booking.getUser().getId());
+        dto.setUserName(booking.getUser().getFirstName() + " " + booking.getUser().getLastName());
+        dto.setUserEmail(booking.getUser().getEmail());
         dto.setBikeId(booking.getBike().getId());
         dto.setStartTime(booking.getStartTime());
         dto.setEndTime(booking.getEndTime());

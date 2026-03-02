@@ -1,21 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { mockBikes } from "@/data/mockData";
+import { fetchBike, createBooking } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, Zap, Clock, DollarSign, CalendarIcon } from "lucide-react";
+import { ArrowLeft, Zap, Clock, DollarSign, CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Bike } from "@/types";
 
 const BookingPage = () => {
   const { bikeId } = useParams();
   const navigate = useNavigate();
-  const bike = mockBikes.find((b) => b.id === bikeId);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [bike, setBike] = useState<Bike | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [duration, setDuration] = useState(1);
   const [rentalDate, setRentalDate] = useState<Date>();
+  const [startHour, setStartHour] = useState(() => {
+    const now = new Date();
+    return now.getHours().toString().padStart(2, "0") + ":" + (Math.ceil(now.getMinutes() / 15) * 15 === 60 ? "00" : (Math.ceil(now.getMinutes() / 15) * 15).toString().padStart(2, "0"));
+  });
+
+  useEffect(() => {
+    if (!bikeId) return;
+    fetchBike(bikeId)
+      .then(setBike)
+      .catch(() => setBike(null))
+      .finally(() => setLoading(false));
+  }, [bikeId]);
+
+  if (loading) {
+    return (
+      <div className="container flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!bike || bike.status !== "AVAILABLE") {
     return (
@@ -28,10 +55,28 @@ const BookingPage = () => {
 
   const totalCost = bike.pricePerHour * duration;
 
-  const handleConfirm = () => {
-    navigate("/booking/confirmation", {
-      state: { bikeName: bike.name, duration, totalCost, bikeId: bike.id, rentalDate: rentalDate ? format(rentalDate, "PPP") : "Not selected" },
-    });
+  const handleConfirm = async () => {
+    if (!user || !bikeId) return;
+    const selectedDate = rentalDate || new Date();
+    const [h, m] = startHour.split(":").map(Number);
+    const startTime = new Date(selectedDate);
+    startTime.setHours(h, m, 0, 0);
+    const endTime = new Date(startTime.getTime() + duration * 60 * 60 * 1000);
+
+    const formatISO = (d: Date) => d.toISOString().slice(0, 19);
+
+    setSubmitting(true);
+    try {
+      await createBooking(user.id, bikeId, formatISO(startTime), formatISO(endTime));
+      toast({ title: "Booking created!", description: "Your ride has been booked successfully." });
+      navigate("/booking/confirmation", {
+        state: { bikeName: bike.name, duration, totalCost, bikeId: bike.id, rentalDate: rentalDate ? format(rentalDate, "PPP") : format(new Date(), "PPP") },
+      });
+    } catch (err) {
+      toast({ title: "Booking failed", description: "Could not create booking. Please try again.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -84,6 +129,28 @@ const BookingPage = () => {
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          {/* Start Time */}
+          <div className="space-y-2">
+            <Label className="text-base">Start Time</Label>
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <Input
+                type="time"
+                value={startHour}
+                onChange={(e) => setStartHour(e.target.value)}
+                className="w-40 font-display text-lg font-semibold"
+              />
+              <span className="text-sm text-muted-foreground">
+                to {(() => {
+                  const [h, m] = startHour.split(":").map(Number);
+                  const end = new Date();
+                  end.setHours(h + duration, m, 0, 0);
+                  return end.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+                })()}
+              </span>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -155,8 +222,9 @@ const BookingPage = () => {
           <Button
             className="w-full gradient-primary text-primary-foreground py-6 text-lg"
             onClick={handleConfirm}
+            disabled={submitting}
           >
-            Confirm Booking — ₱{totalCost.toFixed(2)}
+            {submitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Booking...</> : `Confirm Booking — ₱${totalCost.toFixed(2)}`}
           </Button>
         </div>
       </div>

@@ -9,19 +9,23 @@ public class UserDTO {
     private String lastName;
     private String phone;
     private String address;
+    private String nickname;
+    private String profilePictureUrl;
     private String role;
     private Boolean isActive;
     private LocalDateTime createdAt;
 
     public UserDTO() {}
 
-    public UserDTO(Long id, String email, String firstName, String lastName, String phone, String address, String role, Boolean isActive, LocalDateTime createdAt) {
+    public UserDTO(Long id, String email, String firstName, String lastName, String phone, String address, String nickname, String profilePictureUrl, String role, Boolean isActive, LocalDateTime createdAt) {
         this.id = id;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
         this.address = address;
+        this.nickname = nickname;
+        this.profilePictureUrl = profilePictureUrl;
         this.role = role;
         this.isActive = isActive;
         this.createdAt = createdAt;
@@ -45,6 +49,12 @@ public class UserDTO {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public String getNickname() { return nickname; }
+    public void setNickname(String nickname) { this.nickname = nickname; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }

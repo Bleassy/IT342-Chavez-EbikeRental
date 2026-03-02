@@ -7,6 +7,10 @@ export interface User {
   firstName: string;
   lastName: string;
   role: UserRole;
+  phone?: string;
+  address?: string;
+  nickname?: string;
+  profilePictureUrl?: string;
 }
 
 export type BikeStatus = "AVAILABLE" | "RENTED" | "MAINTENANCE";
@@ -26,11 +30,15 @@ export type BookingStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
 export interface Booking {
   id: string;
   userId: string;
+  userName?: string;
+  userEmail?: string;
   bikeId: string;
   bikeName: string;
   rentalDuration: number;
   totalCost: number;
   bookingStatus: BookingStatus;
+  startTime?: string;
+  endTime?: string;
   createdAt: string;
 }
 

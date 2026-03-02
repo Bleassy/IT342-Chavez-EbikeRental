@@ -67,15 +67,22 @@ const Navbar = () => {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">{user?.firstName}</span>
+          <Link
+            to="/profile"
+            className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 hover:bg-muted/80 transition-colors cursor-pointer"
+          >
+            {user?.profilePictureUrl ? (
+              <img src={user.profilePictureUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+            ) : (
+              <User className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="text-sm font-medium">{user?.nickname || user?.firstName}</span>
             {user?.role === "ADMIN" && (
               <span className="rounded bg-primary/15 px-1.5 py-0.5 text-xs font-semibold text-primary">
                 ADMIN
               </span>
             )}
-          </div>
+          </Link>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="sm">
@@ -127,6 +134,18 @@ const Navbar = () => {
                 Admin Panel
               </Link>
             )}
+            <Link
+              to="/profile"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground"
+            >
+              {user?.profilePictureUrl ? (
+                <img src={user.profilePictureUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
+              My Profile
+            </Link>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button className="mt-2 rounded-lg px-4 py-2.5 text-left text-sm font-medium text-destructive">

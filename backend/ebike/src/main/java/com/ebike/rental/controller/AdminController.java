@@ -69,6 +69,8 @@ public class AdminController {
                         updatedUser.getLastName(),
                         updatedUser.getPhone(),
                         updatedUser.getAddress(),
+                        updatedUser.getNickname(),
+                        updatedUser.getProfilePictureUrl(),
                         updatedUser.getRole().toString(),
                         updatedUser.getIsActive(),
                         updatedUser.getCreatedAt()

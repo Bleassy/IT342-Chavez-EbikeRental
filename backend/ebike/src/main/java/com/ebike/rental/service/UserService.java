@@ -80,6 +80,8 @@ public class UserService {
             if (userDetails.getLastName() != null) user.setLastName(userDetails.getLastName());
             if (userDetails.getPhone() != null) user.setPhone(userDetails.getPhone());
             if (userDetails.getAddress() != null) user.setAddress(userDetails.getAddress());
+            if (userDetails.getNickname() != null) user.setNickname(userDetails.getNickname());
+            if (userDetails.getProfilePictureUrl() != null) user.setProfilePictureUrl(userDetails.getProfilePictureUrl());
             return userRepository.save(user);
         }).orElse(null);
     }
@@ -104,6 +106,8 @@ public class UserService {
                 user.getLastName(),
                 user.getPhone(),
                 user.getAddress(),
+                user.getNickname(),
+                user.getProfilePictureUrl(),
                 user.getRole().toString(),
                 user.getIsActive(),
                 user.getCreatedAt()
