@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Zap, Menu, X, User, LogOut, Shield } from "lucide-react";
+import { Zap, Menu, X, User, LogOut, Shield, Activity } from "lucide-react";
 import { useState } from "react";
 
 const Navbar = () => {
@@ -52,17 +52,30 @@ const Navbar = () => {
             </Link>
           ))}
           {user?.role === "ADMIN" && (
-            <Link
-              to="/admin"
-              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                location.pathname.startsWith("/admin")
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Shield className="h-3.5 w-3.5" />
-              Admin
-            </Link>
+            <>
+              <Link
+                to="/admin/active-rentals"
+                className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive("/admin/active-rentals")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Activity className="h-3.5 w-3.5" />
+                Active Rentals
+              </Link>
+              <Link
+                to="/admin"
+                className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive("/admin") || isActive("/admin/all-rides")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Admin
+              </Link>
+            </>
           )}
         </nav>
 
@@ -126,13 +139,28 @@ const Navbar = () => {
               </Link>
             ))}
             {user?.role === "ADMIN" && (
-              <Link
-                to="/admin"
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground"
-              >
-                Admin Panel
-              </Link>
+              <>
+                <Link
+                  to="/admin/active-rentals"
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium ${
+                    isActive("/admin/active-rentals") ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  <Activity className="h-3.5 w-3.5" />
+                  Active Rentals
+                </Link>
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium ${
+                    isActive("/admin") ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  Admin Panel
+                </Link>
+              </>
             )}
             <Link
               to="/profile"

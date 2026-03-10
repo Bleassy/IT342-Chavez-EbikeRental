@@ -18,9 +18,13 @@ const BikeCard = ({ bike }: BikeCardProps) => {
       to={`/bikes/${bike.id}`}
       className="group glass-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
     >
-      {/* Image placeholder */}
+      {/* Bike Image */}
       <div className="relative h-48 gradient-hero flex items-center justify-center overflow-hidden">
-        <Zap className="h-16 w-16 text-primary/40 transition-transform duration-500 group-hover:scale-110" />
+        {bike.image ? (
+          <img src={bike.image} alt={bike.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+        ) : (
+          <Zap className="h-16 w-16 text-primary/40 transition-transform duration-500 group-hover:scale-110" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/20 to-transparent" />
         <span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-semibold ${statusColors[bike.status]}`}>
           {bike.status}

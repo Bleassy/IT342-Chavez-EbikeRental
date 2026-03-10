@@ -63,11 +63,14 @@ const BookingPage = () => {
     startTime.setHours(h, m, 0, 0);
     const endTime = new Date(startTime.getTime() + duration * 60 * 60 * 1000);
 
-    const formatISO = (d: Date) => d.toISOString().slice(0, 19);
+    const formatLocalISO = (d: Date) => {
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
 
     setSubmitting(true);
     try {
-      await createBooking(user.id, bikeId, formatISO(startTime), formatISO(endTime));
+      await createBooking(user.id, bikeId, formatLocalISO(startTime), formatLocalISO(endTime));
       toast({ title: "Booking created!", description: "Your ride has been booked successfully." });
       navigate("/booking/confirmation", {
         state: { bikeName: bike.name, duration, totalCost, bikeId: bike.id, rentalDate: rentalDate ? format(rentalDate, "PPP") : format(new Date(), "PPP") },

@@ -6,11 +6,13 @@ import com.ebike.rental.dto.AuthResponse;
 import com.ebike.rental.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.UUID;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -33,6 +35,7 @@ public class GoogleAuthService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthResponse authenticateWithGoogle(GoogleAuthRequest request) throws Exception {
         JsonNode payload;
@@ -73,7 +76,7 @@ public class GoogleAuthService {
             user.setEmail(email);
             user.setFirstName(firstName.isEmpty() ? "Google" : firstName);
             user.setLastName(lastName.isEmpty() ? "User" : lastName);
-            user.setPassword(""); // No password for OAuth users
+            user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Hashed random password for OAuth users
             user.setRole(User.UserRole.USER);
             user.setIsActive(true);
             user = userRepository.save(user);

@@ -1,46 +1,66 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchBikes, fetchUserBookings } from "@/lib/api";
+import { fetchBikes, fetchUserBookings, fetchAllBookings } from "@/lib/api";
 import { Link } from "react-router-dom";
 import { Bike as BikeIcon, Zap, Clock, Activity, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Bike, Booking } from "@/types";
 
+const POLL_INTERVAL = 5000;
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const isAdmin = user?.role === "ADMIN";
+
+  const loadData = useCallback(async () => {
+    try {
+      const [b, bk] = await Promise.all([
+        fetchBikes(),
+        user ? fetchUserBookings(user.id) : Promise.resolve([]),
+      ]);
+      setBikes(b);
+      setBookings(bk);
+      // Admin: also fetch ALL bookings for system-wide total spent
+      if (isAdmin) {
+        const all = await fetchAllBookings();
+        setAllBookings(all);
+      }
+    } catch (err) {
+      console.error("Failed to load dashboard:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, isAdmin]);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [b, bk] = await Promise.all([
-          fetchBikes(),
-          user ? fetchUserBookings(user.id) : Promise.resolve([]),
-        ]);
-        setBikes(b);
-        setBookings(bk);
-      } catch (err) {
-        console.error("Failed to load dashboard:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [user]);
+    loadData();
+    const interval = setInterval(loadData, POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
   const availableBikes = bikes.filter((b) => b.status === "AVAILABLE").length;
-  const activeBookings = bookings.filter((b) => b.bookingStatus === "ACTIVE").length;
-  const totalSpent = bookings
+  const activeBookings = isAdmin
+    ? (allBookings.length > 0 ? allBookings : bookings).filter((b) => b.bookingStatus === "ACTIVE").length
+    : bookings.filter((b) => b.bookingStatus === "ACTIVE").length;
+  // Admin sees total revenue from ALL completed bookings, user sees own
+  const spentSource = isAdmin ? allBookings : bookings;
+  const totalSpent = spentSource
     .filter((b) => b.bookingStatus === "COMPLETED")
     .reduce((sum, b) => sum + b.totalCost, 0);
 
+  const totalRidesCount = isAdmin
+    ? allBookings.filter((b) => b.bookingStatus === "COMPLETED" || b.bookingStatus === "CANCELLED").length
+    : bookings.length;
+
   const stats = [
     { label: "Available Bikes", value: loading ? "..." : availableBikes, icon: BikeIcon, color: "text-primary", link: "/bikes" },
-    { label: "Active Rentals", value: loading ? "..." : activeBookings, icon: Activity, color: "text-accent", link: "/bikes" },
-    { label: "Total Spent", value: loading ? "..." : `₱${totalSpent.toFixed(0)}`, icon: Zap, color: "text-warning", link: null },
-    { label: "Total Rides", value: loading ? "..." : bookings.length, icon: Clock, color: "text-primary", link: "/history" },
+    { label: "Active Rentals", value: loading ? "..." : activeBookings, icon: Activity, color: "text-accent", link: isAdmin ? "/admin/active-rentals" : "/bikes" },
+    { label: isAdmin ? "Total Revenue" : "Total Spent", value: loading ? "..." : `₱${totalSpent.toFixed(2)}`, icon: Zap, color: "text-warning", link: null },
+    { label: "Total Rides", value: loading ? "..." : totalRidesCount, icon: Clock, color: "text-primary", link: isAdmin ? "/admin/all-rides" : "/history" },
   ];
 
   return (

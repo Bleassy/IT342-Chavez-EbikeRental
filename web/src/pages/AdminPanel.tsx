@@ -29,7 +29,15 @@ const AdminPanel = () => {
   const [bookingFilter, setBookingFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "CANCELLED">("ALL");
 
   const filteredBikes = bikeFilter === "ALL" ? bikes : bikes.filter((b) => b.status === bikeFilter);
-  const filteredBookings = bookingFilter === "ALL" ? bookings : bookings.filter((b) => b.bookingStatus === bookingFilter);
+
+  // Sort bookings: ACTIVE first, then by newest date, COMPLETED & CANCELLED at the bottom
+  const statusOrder: Record<string, number> = { ACTIVE: 0, COMPLETED: 1, CANCELLED: 2 };
+  const sortedBookings = [...bookings].sort((a, b) => {
+    const orderDiff = (statusOrder[a.bookingStatus] ?? 9) - (statusOrder[b.bookingStatus] ?? 9);
+    if (orderDiff !== 0) return orderDiff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+  const filteredBookings = bookingFilter === "ALL" ? sortedBookings : sortedBookings.filter((b) => b.bookingStatus === bookingFilter);
 
   // Load data from API
   const loadData = useCallback(async () => {
@@ -54,9 +62,14 @@ const AdminPanel = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: "new" | "edit") => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    if (target === "new") setNewBike({ ...newBike, image: url });
-    else if (editingBike) setEditingBike({ ...editingBike, image: url });
+    // Convert to base64 so image persists to the database
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      if (target === "new") setNewBike({ ...newBike, image: base64 });
+      else if (editingBike) setEditingBike({ ...editingBike, image: base64 });
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleAddBike = async () => {
@@ -143,6 +156,24 @@ const AdminPanel = () => {
     } catch (err) {
       toast({ title: "Failed to update bike", variant: "destructive" });
     }
+  };
+
+  // Inline image upload for bike table row
+  const handleInlineImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, bikeId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      try {
+        await updateBike(bikeId, { imageUrl: base64 });
+        toast({ title: "Image uploaded", description: "Bike image has been updated." });
+        loadData();
+      } catch (err) {
+        toast({ title: "Failed to upload image", variant: "destructive" });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   if (loading) {
@@ -290,20 +321,36 @@ const AdminPanel = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Battery</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Price/Hr</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Status</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase text-muted-foreground">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Image</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Battery</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Price/Hr</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredBikes.map((bike) => (
                     <tr key={bike.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="px-6 py-4 font-medium text-foreground">{bike.name}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{bike.batteryLevel}%</td>
-                      <td className="px-6 py-4 text-muted-foreground">₱{bike.pricePerHour}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
+                        <div className="relative group/img">
+                          {bike.image ? (
+                            <img src={bike.image} alt={bike.name} className="h-12 w-12 rounded-lg object-cover" />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                              <BikeIcon className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-lg bg-black/50 opacity-0 transition-opacity group-hover/img:opacity-100">
+                            <ImagePlus className="h-4 w-4 text-white" />
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleInlineImageUpload(e, bike.id)} />
+                          </label>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 font-medium text-foreground">{bike.name}</td>
+                      <td className="px-4 py-4 text-muted-foreground">{bike.batteryLevel}%</td>
+                      <td className="px-4 py-4 text-muted-foreground">₱{bike.pricePerHour}</td>
+                      <td className="px-4 py-4">
                         <select
                           value={bike.status}
                           onChange={(e) => handleStatusChange(bike.id, e.target.value as BikeStatus)}
@@ -314,7 +361,7 @@ const AdminPanel = () => {
                           <option value="MAINTENANCE">Maintenance</option>
                         </select>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-4 text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="sm" onClick={() => setEditingBike(bike)}>
                             <Pencil className="h-4 w-4" />
@@ -391,7 +438,9 @@ const AdminPanel = () => {
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Total</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Status</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Booked On</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-muted-foreground">Actions</th>
+                    {(bookingFilter === "ALL" || bookingFilter === "ACTIVE") && (
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-muted-foreground">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -425,18 +474,20 @@ const AdminPanel = () => {
                       <td className="px-4 py-4 text-sm text-muted-foreground">
                         {new Date(b.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </td>
-                      <td className="px-4 py-4 text-right">
-                        {b.bookingStatus === "ACTIVE" && (
-                          <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="outline" onClick={() => handleCompleteBooking(b.id)}>
-                              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Complete
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleCancelBooking(b.id)}>
-                              <XCircle className="mr-1.5 h-3.5 w-3.5" /> Cancel
-                            </Button>
-                          </div>
-                        )}
-                      </td>
+                      {(bookingFilter === "ALL" || bookingFilter === "ACTIVE") && (
+                        <td className="px-4 py-4 text-right">
+                          {b.bookingStatus === "ACTIVE" && (
+                            <div className="flex justify-end gap-2">
+                              <Button size="sm" variant="outline" onClick={() => handleCompleteBooking(b.id)}>
+                                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Complete
+                              </Button>
+                              <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleCancelBooking(b.id)}>
+                                <XCircle className="mr-1.5 h-3.5 w-3.5" /> Cancel
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

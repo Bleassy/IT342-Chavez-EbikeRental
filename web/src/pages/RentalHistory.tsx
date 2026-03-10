@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { fetchUserBookings, cancelBooking } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Booking } from "@/types";
-import { Clock, DollarSign, Bike, Loader2, XCircle } from "lucide-react";
+import { Clock, DollarSign, Bike, Loader2, XCircle, ChevronDown, CalendarDays, MapPin, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,8 +19,16 @@ const RentalHistory = () => {
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "CANCELLED">("ALL");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filteredBookings = filter === "ALL" ? bookings : bookings.filter((b) => b.bookingStatus === filter);
+  // Sort bookings: ACTIVE first, then by newest date, COMPLETED & CANCELLED at the bottom
+  const statusOrder: Record<string, number> = { ACTIVE: 0, COMPLETED: 1, CANCELLED: 2 };
+  const sortedBookings = [...bookings].sort((a, b) => {
+    const orderDiff = (statusOrder[a.bookingStatus] ?? 9) - (statusOrder[b.bookingStatus] ?? 9);
+    if (orderDiff !== 0) return orderDiff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+  const filteredBookings = filter === "ALL" ? sortedBookings : sortedBookings.filter((b) => b.bookingStatus === filter);
 
   const loadBookings = () => {
     if (!user) return;
@@ -88,59 +96,145 @@ const RentalHistory = () => {
       </div>
 
       <div className="space-y-4">
-        {filteredBookings.map((booking, i) => (
-          <div
-            key={booking.id}
-            className="glass-card p-6 animate-fade-up"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-                  <Bike className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-display font-semibold text-foreground">{booking.bikeName}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(booking.createdAt).toLocaleDateString("en-US", {
-                      year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-              </div>
+        {filteredBookings.map((booking, i) => {
+          const isExpanded = expandedId === booking.id;
+          return (
+            <div
+              key={booking.id}
+              className="glass-card overflow-hidden animate-fade-up"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              {/* Clickable header row */}
+              <button
+                type="button"
+                className="w-full p-6 text-left hover:bg-muted/30 transition-colors"
+                onClick={() => setExpandedId(isExpanded ? null : booking.id)}
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                      <Bike className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-semibold text-foreground">{booking.bikeName}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(booking.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>{booking.rentalDuration}h</span>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>{booking.rentalDuration}h</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-display font-semibold text-foreground">₱{booking.totalCost.toFixed(2)}</span>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[booking.bookingStatus]}`}>
+                      {booking.bookingStatus}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-display font-semibold text-foreground">₱{booking.totalCost.toFixed(2)}</span>
+              </button>
+
+              {/* Expanded details */}
+              {isExpanded && (
+                <div className="border-t border-border bg-muted/20 px-6 py-5 animate-fade-in">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="flex items-start gap-3">
+                      <CalendarDays className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Schedule</p>
+                        {booking.startTime ? (
+                          <>
+                            <p className="text-sm font-medium text-foreground">
+                              {new Date(booking.startTime).toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(booking.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                              {" — "}
+                              {booking.endTime && new Date(booking.endTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not set</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <Timer className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Duration</p>
+                        <p className="text-sm font-medium text-foreground">{booking.rentalDuration} hour{booking.rentalDuration !== 1 ? "s" : ""}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <DollarSign className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Total Cost</p>
+                        <p className="text-sm font-medium text-foreground">₱{booking.totalCost.toFixed(2)}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <Bike className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Bike</p>
+                        <p className="text-sm font-medium text-foreground">{booking.bikeName}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Status</p>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[booking.bookingStatus]}`}>
+                          {booking.bookingStatus}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <CalendarDays className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Booked On</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {new Date(booking.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {booking.bookingStatus === "ACTIVE" && (
+                    <div className="mt-5 flex justify-end border-t border-border pt-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                        disabled={cancellingId === booking.id}
+                        onClick={(e) => { e.stopPropagation(); handleCancel(booking.id); }}
+                      >
+                        {cancellingId === booking.id ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        Cancel Booking
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[booking.bookingStatus]}`}>
-                  {booking.bookingStatus}
-                </span>
-                {booking.bookingStatus === "ACTIVE" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                    disabled={cancellingId === booking.id}
-                    onClick={() => handleCancel(booking.id)}
-                  >
-                    {cancellingId === booking.id ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <XCircle className="mr-1.5 h-3.5 w-3.5" />
-                    )}
-                    Cancel
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {filteredBookings.length === 0 && (

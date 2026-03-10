@@ -51,8 +51,12 @@ const BikeDetails = () => {
       </button>
 
       <div className="glass-card overflow-hidden animate-fade-up">
-        <div className="h-64 gradient-hero flex items-center justify-center">
-          <Zap className="h-24 w-24 text-primary/30" />
+        <div className="h-64 gradient-hero flex items-center justify-center overflow-hidden">
+          {bike.image ? (
+            <img src={bike.image} alt={bike.name} className="h-full w-full object-cover" />
+          ) : (
+            <Zap className="h-24 w-24 text-primary/30" />
+          )}
         </div>
 
         <div className="p-8">
