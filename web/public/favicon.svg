@@ -6,5 +6,34 @@
     </linearGradient>
   </defs>
   <rect width="200" height="200" fill="url(#grad1)" rx="40"/>
-  <path d="M 100 30 L 130 90 L 100 90 L 100 170 L 70 100 L 100 100 Z" fill="white" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Left wheel -->
+  <circle cx="70" cy="120" r="35" fill="none" stroke="white" stroke-width="4"/>
+  <circle cx="70" cy="120" r="6" fill="white"/>
+  <!-- Wheel spokes (left) -->
+  <line x1="70" y1="85" x2="70" y2="50" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  <line x1="70" y1="155" x2="70" y2="190" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  <line x1="35" y1="120" x2="5" y2="120" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  <line x1="105" y1="120" x2="135" y2="120" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  
+  <!-- Right wheel -->
+  <circle cx="130" cy="120" r="35" fill="none" stroke="white" stroke-width="4"/>
+  <circle cx="130" cy="120" r="6" fill="white"/>
+  <!-- Wheel spokes (right) -->
+  <line x1="130" y1="85" x2="130" y2="50" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  <line x1="130" y1="155" x2="130" y2="190" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  <line x1="95" y1="120" x2="65" y2="120" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  <line x1="165" y1="120" x2="195" y2="120" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  
+  <!-- Frame -->
+  <line x1="70" y1="120" x2="100" y2="65" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <line x1="100" y1="65" x2="130" y2="120" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <line x1="100" y1="65" x2="70" y2="120" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Seat post and seat -->
+  <line x1="95" y1="75" x2="92" y2="50" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="92" cy="48" rx="8" ry="4" fill="white"/>
+  
+  <!-- Handlebars -->
+  <line x1="100" y1="65" x2="100" y2="40" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <line x1="85" y1="40" x2="115" y2="40" stroke="white" stroke-width="3" stroke-linecap="round"/>
 </svg>

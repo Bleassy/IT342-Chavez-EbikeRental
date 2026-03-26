@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Zap, Mail, Lock, User as UserIcon, Phone, MapPin } from "lucide-react";
+import { Bike, Mail, Lock, User as UserIcon, Phone, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
@@ -38,7 +38,7 @@ const Register = () => {
     <div className="flex min-h-screen">
       <div className="hidden w-1/2 gradient-hero lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12">
         <div className="flex h-20 w-20 items-center justify-center rounded-2xl gradient-primary shadow-glow mb-8">
-          <Zap className="h-10 w-10 text-primary-foreground" />
+          <Bike className="h-10 w-10 text-primary-foreground" />
         </div>
         <h1 className="font-display text-4xl font-bold text-primary-foreground text-center">Join the Ride</h1>
         <p className="mt-4 max-w-md text-center text-lg text-primary-foreground/70">

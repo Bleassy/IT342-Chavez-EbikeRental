@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Zap, Mail, Lock } from "lucide-react";
+import { Bike, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
@@ -62,7 +62,7 @@ const Login = () => {
       {/* Left panel */}
       <div className="hidden w-1/2 gradient-hero lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12">
         <div className="flex h-20 w-20 items-center justify-center rounded-2xl gradient-primary shadow-glow mb-8">
-          <Zap className="h-10 w-10 text-primary-foreground" />
+          <Bike className="h-10 w-10 text-primary-foreground" />
         </div>
         <h1 className="font-display text-4xl font-bold text-primary-foreground text-center">
           E-Bike Rental
@@ -77,7 +77,7 @@ const Login = () => {
         <div className="w-full max-w-md animate-fade-up">
           <div className="mb-8 lg:hidden flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-              <Zap className="h-5 w-5 text-primary-foreground" />
+              <Bike className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="font-display text-xl font-bold">E-Bike Rental</span>
           </div>

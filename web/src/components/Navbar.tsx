@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Zap, Menu, X, User, LogOut, Shield, Activity } from "lucide-react";
+import { Bike, Menu, X, User, LogOut, Shield, Activity } from "lucide-react";
 import { useState } from "react";
 
 const Navbar = () => {
@@ -31,7 +31,7 @@ const Navbar = () => {
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-display text-xl font-bold text-foreground">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
-            <Zap className="h-5 w-5 text-primary-foreground" />
+            <Bike className="h-5 w-5 text-primary-foreground" />
           </div>
           E-Bike Rental
         </Link>
