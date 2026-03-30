@@ -1,0 +1,139 @@
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+    <data>
+        <!-- Variables for data binding can be declared here if needed -->
+    </data>
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/background"
+        tools:context=".ui.RegisterActivity">
+        <!-- Card container for form -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/registerCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginTop="60dp"
+            android:layout_marginBottom="60dp"
+            android:layout_marginLeft="32dp"
+            android:layout_marginRight="32dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp"
+            android:background="@color/white">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+                <!-- Title -->
+                <TextView
+                    android:id="@+id/tvRegisterTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Register"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primaryText"
+                    android:gravity="center"
+                    android:layout_marginBottom="24dp"/>
+                <EditText
+                    android:id="@+id/etUsername"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Username *"
+                    android:background="@drawable/edittext_bg"
+                    android:padding="12dp"
+                    android:textColor="@color/primaryText"
+                    android:textColorHint="@color/hintText"
+                    android:layout_marginBottom="12dp"/>
+                <EditText
+                    android:id="@+id/etEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Email *"
+                    android:inputType="textEmailAddress"
+                    android:background="@drawable/edittext_bg"
+                    android:padding="12dp"
+                    android:textColor="@color/primaryText"
+                    android:textColorHint="@color/hintText"
+                    android:layout_marginBottom="12dp"/>
+                <EditText
+                    android:id="@+id/etFirstName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="First Name"
+                    android:background="@drawable/edittext_bg"
+                    android:padding="12dp"
+                    android:textColor="@color/primaryText"
+                    android:textColorHint="@color/hintText"
+                    android:layout_marginBottom="12dp"/>
+                <EditText
+                    android:id="@+id/etLastName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Last Name"
+                    android:background="@drawable/edittext_bg"
+                    android:padding="12dp"
+                    android:textColor="@color/primaryText"
+                    android:textColorHint="@color/hintText"
+                    android:layout_marginBottom="12dp"/>
+                <EditText
+                    android:id="@+id/etPhoneNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Phone Number"
+                    android:inputType="phone"
+                    android:background="@drawable/edittext_bg"
+                    android:padding="12dp"
+                    android:textColor="@color/primaryText"
+                    android:textColorHint="@color/hintText"
+                    android:layout_marginBottom="12dp"/>
+                <EditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Password *"
+                    android:inputType="textPassword"
+                    android:background="@drawable/edittext_bg"
+                    android:padding="12dp"
+                    android:textColor="@color/primaryText"
+                    android:textColorHint="@color/hintText"
+                    android:layout_marginBottom="12dp"/>
+                <EditText
+                    android:id="@+id/etConfirmPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Confirm Password *"
+                    android:inputType="textPassword"
+                    android:background="@drawable/edittext_bg"
+                    android:padding="12dp"
+                    android:textColor="@color/primaryText"
+                    android:textColorHint="@color/hintText"
+                    android:layout_marginBottom="24dp"/>
+                <Button
+                    android:id="@+id/btnRegister"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Register"
+                    android:backgroundTint="@color/primaryButton"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp"/>
+                <TextView
+                    android:id="@+id/tvLogin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Already have an account? Login"
+                    android:textColor="@color/linkText"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

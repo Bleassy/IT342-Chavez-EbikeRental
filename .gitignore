@@ -21,5 +21,11 @@ web/.vite/
 .env.local
 .env.production
 
+# Android/Gradle
+mobile2/.gradle/
+mobile2/app/build/
+mobile2/.idea/
+mobile2/*.iml
+
 # Logs
 *.log

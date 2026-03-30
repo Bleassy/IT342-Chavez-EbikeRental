@@ -1,0 +1,139 @@
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="User Profile"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginTop="80dp"/>
+
+
+        <!-- User ID -->
+        <TextView
+            android:id="@+id/tvUserId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="User ID:"
+            android:textSize="18sp"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="24dp"/>
+
+        <!-- Username -->
+        <TextView
+            android:id="@+id/tvUsername"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Username:"
+            android:textSize="18sp"
+            app:layout_constraintTop_toBottomOf="@id/tvUserId"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Email -->
+        <TextView
+            android:id="@+id/tvEmail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Email:"
+            android:textSize="18sp"
+            app:layout_constraintTop_toBottomOf="@id/tvUsername"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="12dp"/>
+
+        <!-- First Name -->
+        <TextView
+            android:id="@+id/tvFirstName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="First Name:"
+            android:textSize="18sp"
+            app:layout_constraintTop_toBottomOf="@id/tvEmail"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Last Name -->
+        <TextView
+            android:id="@+id/tvLastName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Last Name:"
+            android:textSize="18sp"
+            app:layout_constraintTop_toBottomOf="@id/tvFirstName"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Phone Number -->
+        <TextView
+            android:id="@+id/tvPhoneNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Phone Number:"
+            android:textSize="18sp"
+            app:layout_constraintTop_toBottomOf="@id/tvLastName"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Member Since -->
+        <TextView
+            android:id="@+id/tvMemberSince"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Member Since:"
+            android:textSize="18sp"
+            app:layout_constraintTop_toBottomOf="@id/tvPhoneNumber"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Last Updated -->
+        <TextView
+            android:id="@+id/tvLastUpdated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Last Updated:"
+            android:textSize="18sp"
+            app:layout_constraintTop_toBottomOf="@id/tvMemberSince"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Back Button -->
+        <Button
+            android:id="@+id/btnBack"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Back"
+            android:backgroundTint="@color/primaryButton"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@id/tvEmail"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginTop="40dp"
+            android:layout_marginStart="40dp"
+            android:layout_marginEnd="40dp"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>
