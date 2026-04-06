@@ -6,6 +6,7 @@ import {
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -246,11 +247,11 @@ const AdminPanel = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Price/Hour (₱)</Label>
-                  <Input type="number" value={newBike.pricePerHour} onChange={(e) => setNewBike({ ...newBike, pricePerHour: parseFloat(e.target.value) || 0 })} />
+                  <Input type="number" value={newBike.pricePerHour === 0 ? "" : newBike.pricePerHour} onChange={(e) => setNewBike({ ...newBike, pricePerHour: e.target.value === "" ? 0 : parseFloat(e.target.value) })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Battery Level (%)</Label>
-                  <Input type="number" value={newBike.batteryLevel} onChange={(e) => setNewBike({ ...newBike, batteryLevel: parseInt(e.target.value) || 0 })} />
+                  <Input type="number" value={newBike.batteryLevel === 0 ? "" : newBike.batteryLevel} onChange={(e) => setNewBike({ ...newBike, batteryLevel: e.target.value === "" ? 0 : parseInt(e.target.value) })} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Description</Label>
@@ -275,45 +276,49 @@ const AdminPanel = () => {
             </div>
           )}
 
-          {/* Edit Form */}
-          {editingBike && (
-            <div className="glass-card mb-6 p-6 animate-fade-in">
-              <h3 className="font-display text-lg font-semibold mb-4">Edit: {editingBike.name}</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={editingBike.name} onChange={(e) => setEditingBike({ ...editingBike, name: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Price/Hour (₱)</Label>
-                  <Input type="number" value={editingBike.pricePerHour} onChange={(e) => setEditingBike({ ...editingBike, pricePerHour: parseFloat(e.target.value) || 0 })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Battery Level (%)</Label>
-                  <Input type="number" value={editingBike.batteryLevel} onChange={(e) => setEditingBike({ ...editingBike, batteryLevel: parseInt(e.target.value) || 0 })} />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Description</Label>
-                  <Textarea value={editingBike.description || ""} onChange={(e) => setEditingBike({ ...editingBike, description: e.target.value })} placeholder="Bike description" rows={3} />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Bike Image</Label>
-                  <div className="flex items-center gap-4">
-                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground hover:bg-muted/50 transition-colors">
-                      <ImagePlus className="h-4 w-4" />
-                      {editingBike.image ? "Change image" : "Upload image"}
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, "edit")} />
-                    </label>
-                    {editingBike.image && <img src={editingBike.image} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />}
+          {/* Edit Dialog */}
+          <Dialog open={!!editingBike} onOpenChange={(open) => { if (!open) setEditingBike(null); }}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="font-display text-lg">Edit: {editingBike?.name}</DialogTitle>
+              </DialogHeader>
+              {editingBike && (
+                <div className="grid gap-4 sm:grid-cols-2 pt-2">
+                  <div className="space-y-2">
+                    <Label>Name</Label>
+                    <Input value={editingBike.name} onChange={(e) => setEditingBike({ ...editingBike, name: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Price/Hour (₱)</Label>
+                    <Input type="number" value={editingBike.pricePerHour === 0 ? "" : editingBike.pricePerHour} onChange={(e) => setEditingBike({ ...editingBike, pricePerHour: e.target.value === "" ? 0 : parseFloat(e.target.value) })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Battery Level (%)</Label>
+                    <Input type="number" value={editingBike.batteryLevel === 0 ? "" : editingBike.batteryLevel} onChange={(e) => setEditingBike({ ...editingBike, batteryLevel: e.target.value === "" ? 0 : parseInt(e.target.value) })} />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Description</Label>
+                    <Textarea value={editingBike.description || ""} onChange={(e) => setEditingBike({ ...editingBike, description: e.target.value })} placeholder="Bike description" rows={3} />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Bike Image</Label>
+                    <div className="flex items-center gap-4">
+                      <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground hover:bg-muted/50 transition-colors">
+                        <ImagePlus className="h-4 w-4" />
+                        {editingBike.image ? "Change image" : "Upload image"}
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, "edit")} />
+                      </label>
+                      {editingBike.image && <img src={editingBike.image} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />}
+                    </div>
+                  </div>
+                  <div className="sm:col-span-2 flex gap-2 justify-end pt-2">
+                    <Button variant="outline" onClick={() => setEditingBike(null)}>Cancel</Button>
+                    <Button className="gradient-primary text-primary-foreground" onClick={handleUpdateBike}>Save Changes</Button>
                   </div>
                 </div>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <Button className="gradient-primary text-primary-foreground" onClick={handleUpdateBike}>Save</Button>
-                <Button variant="outline" onClick={() => setEditingBike(null)}>Cancel</Button>
-              </div>
-            </div>
-          )}
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Bike Table */}
           <div className="glass-card overflow-hidden">
