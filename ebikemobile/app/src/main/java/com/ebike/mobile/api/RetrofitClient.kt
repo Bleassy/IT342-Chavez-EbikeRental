@@ -12,7 +12,8 @@ object RetrofitClient {
     
     private var retrofit: Retrofit? = null
     
-    fun getClient(context: Context, baseUrl: String = "http://10.0.2.2:8080/api/"): Retrofit {
+    // Use 192.168.254.109 for physical device, 10.0.2.2 for emulator
+    fun getClient(context: Context, baseUrl: String = "http://192.168.254.109:8080/api/"): Retrofit {
         if (retrofit == null) {
             val logging = HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY

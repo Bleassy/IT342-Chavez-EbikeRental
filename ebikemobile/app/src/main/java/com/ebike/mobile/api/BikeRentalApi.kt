@@ -8,13 +8,13 @@ interface BikeRentalApi {
     
     // Authentication
     @POST("auth/login")
-    suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+    suspend fun login(@Body request: LoginRequest): Response<AuthApiResponse>
     
     @POST("auth/register")
-    suspend fun register(@Body request: RegisterRequest): Response<LoginResponse>
+    suspend fun register(@Body request: RegisterRequest): Response<AuthApiResponse>
     
     @POST("auth/google")
-    suspend fun loginWithGoogle(@Body request: AuthGoogleRequest): Response<LoginResponse>
+    suspend fun loginWithGoogle(@Body request: AuthGoogleRequest): Response<AuthApiResponse>
     
     // Users
     @GET("users/profile")

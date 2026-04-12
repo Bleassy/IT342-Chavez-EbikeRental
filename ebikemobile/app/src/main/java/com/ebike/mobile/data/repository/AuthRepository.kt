@@ -18,20 +18,26 @@ class AuthRepository(private val context: Context) {
             val response = api.login(request)
             
             if (response.isSuccessful) {
-                response.body()?.let {
-                    // Save token and user data
-                    tokenManager.saveToken(it.token)
-                    tokenManager.saveUserData(
-                        it.user.id,
-                        it.user.email,
-                        it.user.fullName,
-                        it.user.role,
-                        it.user.profilePic
-                    )
-                    Result.success(it)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success && apiResponse.data != null) {
+                        // Save token and user data
+                        tokenManager.saveToken(apiResponse.data.token)
+                        tokenManager.saveUserData(
+                            apiResponse.data.user.id,
+                            apiResponse.data.user.email,
+                            apiResponse.data.user.fullName,
+                            apiResponse.data.user.role,
+                            apiResponse.data.user.profilePic
+                        )
+                        Result.success(apiResponse.data)
+                    } else {
+                        Result.failure(Exception(apiResponse.message ?: "Login failed"))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
-                Result.failure(Exception(response.errorBody()?.string() ?: "Login failed"))
+                val errorBody = response.errorBody()?.string()
+                Timber.e("Login error: $errorBody")
+                Result.failure(Exception(errorBody ?: "Login failed"))
             }
         } catch (e: Exception) {
             Timber.e(e, "Login error")
@@ -51,20 +57,26 @@ class AuthRepository(private val context: Context) {
             val response = api.register(request)
             
             if (response.isSuccessful) {
-                response.body()?.let {
-                    // Save token and user data
-                    tokenManager.saveToken(it.token)
-                    tokenManager.saveUserData(
-                        it.user.id,
-                        it.user.email,
-                        it.user.fullName,
-                        it.user.role,
-                        it.user.profilePic
-                    )
-                    Result.success(it)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success && apiResponse.data != null) {
+                        // Save token and user data
+                        tokenManager.saveToken(apiResponse.data.token)
+                        tokenManager.saveUserData(
+                            apiResponse.data.user.id,
+                            apiResponse.data.user.email,
+                            apiResponse.data.user.fullName,
+                            apiResponse.data.user.role,
+                            apiResponse.data.user.profilePic
+                        )
+                        Result.success(apiResponse.data)
+                    } else {
+                        Result.failure(Exception(apiResponse.message ?: "Registration failed"))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
-                Result.failure(Exception(response.errorBody()?.string() ?: "Registration failed"))
+                val errorBody = response.errorBody()?.string()
+                Timber.e("Register error: $errorBody")
+                Result.failure(Exception(errorBody ?: "Registration failed"))
             }
         } catch (e: Exception) {
             Timber.e(e, "Registration error")
@@ -78,21 +90,27 @@ class AuthRepository(private val context: Context) {
             val response = api.loginWithGoogle(request)
             
             if (response.isSuccessful) {
-                response.body()?.let {
-                    // Save token and user data
-                    tokenManager.saveToken(it.token)
-                    tokenManager.saveGoogleToken(googleToken)
-                    tokenManager.saveUserData(
-                        it.user.id,
-                        it.user.email,
-                        it.user.fullName,
-                        it.user.role,
-                        it.user.profilePic
-                    )
-                    Result.success(it)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success && apiResponse.data != null) {
+                        // Save token and user data
+                        tokenManager.saveToken(apiResponse.data.token)
+                        tokenManager.saveGoogleToken(googleToken)
+                        tokenManager.saveUserData(
+                            apiResponse.data.user.id,
+                            apiResponse.data.user.email,
+                            apiResponse.data.user.fullName,
+                            apiResponse.data.user.role,
+                            apiResponse.data.user.profilePic
+                        )
+                        Result.success(apiResponse.data)
+                    } else {
+                        Result.failure(Exception(apiResponse.message ?: "Google login failed"))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
-                Result.failure(Exception(response.errorBody()?.string() ?: "Google login failed"))
+                val errorBody = response.errorBody()?.string()
+                Timber.e("Google login error: $errorBody")
+                Result.failure(Exception(errorBody ?: "Google login failed"))
             }
         } catch (e: Exception) {
             Timber.e(e, "Google login error")

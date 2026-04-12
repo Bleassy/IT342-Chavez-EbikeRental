@@ -17,6 +17,7 @@ class AuthViewModel(private val context: Context) : ViewModel() {
     private val repository = AuthRepository(context)
     private val tokenManager = TokenManager(context)
     private val googleSignInHelper by lazy { GoogleSignInHelper(context) }
+
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading

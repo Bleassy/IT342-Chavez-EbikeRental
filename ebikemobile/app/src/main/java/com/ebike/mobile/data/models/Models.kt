@@ -82,6 +82,14 @@ data class LoginResponse(
 ) : Parcelable
 
 @Parcelize
+data class AuthApiResponse(
+    val success: Boolean,
+    val message: String,
+    val data: LoginResponse? = null,
+    val errors: Map<String, String>? = null
+) : Parcelable
+
+@Parcelize
 data class RegisterRequest(
     val email: String,
     val password: String,
