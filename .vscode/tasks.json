@@ -1,0 +1,200 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Backend Spring Boot",
+			"type": "shell",
+			"command": "./mvnw.cmd",
+			"args": [
+				"spring-boot:run"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend Spring Boot",
+			"type": "shell",
+			"command": "Set-Location backend/ebike; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Run Web Frontend",
+			"type": "shell",
+			"command": "Set-Location web; npm run dev",
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend Spring Boot Bypass",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Run Web Frontend Cmd",
+			"type": "shell",
+			"command": "Set-Location web; & npm.cmd run dev",
+			"isBackground": true
+		},
+		{
+			"label": "Install Web Dependencies",
+			"type": "shell",
+			"command": "Set-Location web; & npm.cmd install",
+			"isBackground": false
+		},
+		{
+			"label": "Run Web Frontend Dev",
+			"type": "shell",
+			"command": "Set-Location web; & npm.cmd run dev",
+			"isBackground": true
+		},
+		{
+			"label": "Create Backend DB",
+			"type": "shell",
+			"command": "& mysql -uroot -p123456 -e \"CREATE DATABASE IF NOT EXISTS ebike_rental_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\"",
+			"isBackground": false
+		},
+		{
+			"label": "Run Backend AutoCreate DB",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; & .\\mvnw.cmd spring-boot:run \"-Dspring-boot.run.arguments=--spring.datasource.url=jdbc:mysql://localhost:3306/ebike_rental_db?createDatabaseIfNotExist=true\"",
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend AutoCreate DB v2",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; & .\\mvnw.cmd spring-boot:run -D\"spring-boot.run.arguments=--spring.datasource.url=jdbc:mysql://localhost:3306/ebike_rental_db?createDatabaseIfNotExist=true\"",
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend AutoCreate DB v3",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; & .\\mvnw.cmd \"-Dspring-boot.run.arguments=--spring.datasource.url=jdbc:mysql://localhost:3306/ebike_rental_db?createDatabaseIfNotExist=true\" spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend Env URL",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_DATASOURCE_URL='jdbc:mysql://localhost:3306/ebike_rental_db?createDatabaseIfNotExist=true'; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Free Port 8080",
+			"type": "shell",
+			"command": "$pid=(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess); if ($pid) { Stop-Process -Id $pid -Force; Write-Output \"Stopped PID $pid on 8080\" } else { Write-Output \"No listener on 8080\" }",
+			"isBackground": false
+		},
+		{
+			"label": "Free Port 8080 v2",
+			"type": "shell",
+			"command": "$procId=(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess); if ($procId) { Stop-Process -Id $procId -Force; Write-Output \"Stopped process $procId on 8080\" } else { Write-Output \"No listener on 8080\" }",
+			"isBackground": false
+		},
+		{
+			"label": "Run Backend 8080",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Run Web Frontend 5173",
+			"type": "shell",
+			"command": "Set-Location web; & npm.cmd run dev -- --port 5173",
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend with Neon",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?user=neondb_owner&password=npg_WyitZCd79pIN&sslmode=require&channelBinding=require'; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend Neon 8081",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require'; $env:SPRING_DATASOURCE_USERNAME='neondb_owner'; $env:SPRING_DATASOURCE_PASSWORD='npg_WyitZCd79pIN'; $env:PORT='8081'; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Bootstrap Neon Schema",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require'; $env:SPRING_DATASOURCE_USERNAME='neondb_owner'; $env:SPRING_DATASOURCE_PASSWORD='npg_WyitZCd79pIN'; $env:PORT='8082'; $env:SPRING_JPA_HIBERNATE_DDL_AUTO='create'; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend Neon 8083 Verify",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require'; $env:SPRING_DATASOURCE_USERNAME='neondb_owner'; $env:SPRING_DATASOURCE_PASSWORD='npg_WyitZCd79pIN'; $env:PORT='8083'; $env:SPRING_JPA_HIBERNATE_DDL_AUTO='update'; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Restart Frontend Kill 5173",
+			"type": "shell",
+			"command": "$procId=(Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess); if ($procId) { Stop-Process -Id $procId -Force; Write-Output \"Stopped process $procId on 5173\" } else { Write-Output \"No listener on 5173\" }",
+			"isBackground": false
+		},
+		{
+			"label": "Run Frontend 5173 Neon API",
+			"type": "shell",
+			"command": "Set-Location web; & npm.cmd run dev -- --port 5173",
+			"isBackground": true
+		},
+		{
+			"label": "Restart Backend Promote Admin",
+			"type": "shell",
+			"command": "$procId=(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess); if ($procId) { Stop-Process -Id $procId -Force; Write-Output \"Stopped process $procId on 8083\" } ; Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require'; $env:SPRING_DATASOURCE_USERNAME='neondb_owner'; $env:SPRING_DATASOURCE_PASSWORD='npg_WyitZCd79pIN'; $env:PORT='8083'; $env:ADMIN_BOOTSTRAP_EMAIL='blisschavez1@gmail.com'; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Stop Port 8083",
+			"type": "shell",
+			"command": "$procId=(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess); if ($procId) { Stop-Process -Id $procId -Force; Write-Output \"Stopped process $procId on 8083\" } else { Write-Output \"No listener on 8083\" }",
+			"isBackground": false
+		},
+		{
+			"label": "Run Backend Neon Admin Bootstrap",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require'; $env:SPRING_DATASOURCE_USERNAME='neondb_owner'; $env:SPRING_DATASOURCE_PASSWORD='npg_WyitZCd79pIN'; $env:PORT='8083'; $env:SPRING_JPA_HIBERNATE_DDL_AUTO='update'; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend Neon Admin Bootstrap 2",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require'; $env:SPRING_DATASOURCE_USERNAME='neondb_owner'; $env:SPRING_DATASOURCE_PASSWORD='npg_WyitZCd79pIN'; $env:PORT='8083'; $env:SPRING_JPA_HIBERNATE_DDL_AUTO='update'; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend Neon Admin Bootstrap 3",
+			"type": "shell",
+			"command": "Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require'; $env:SPRING_DATASOURCE_USERNAME='neondb_owner'; $env:SPRING_DATASOURCE_PASSWORD='npg_WyitZCd79pIN'; $env:PORT='8083'; $env:SPRING_JPA_HIBERNATE_DDL_AUTO='update'; & .\\mvnw.cmd spring-boot:run",
+			"isBackground": true
+		},
+		{
+			"label": "Verify Backend Compile",
+			"type": "shell",
+			"command": "Set-Location backend/ebike; & .\\mvnw.cmd -DskipTests compile",
+			"isBackground": false
+		},
+		{
+			"label": "Verify Frontend Build",
+			"type": "shell",
+			"command": "Set-Location web; & npm.cmd run build",
+			"isBackground": false
+		},
+		{
+			"label": "Recheck Backend Compile",
+			"type": "shell",
+			"command": "Set-Location backend/ebike; & .\\mvnw.cmd -DskipTests compile",
+			"isBackground": false
+		},
+		{
+			"label": "Recheck Frontend Build",
+			"type": "shell",
+			"command": "Set-Location web; & npm.cmd run build",
+			"isBackground": false
+		},
+		{
+			"label": "Final Frontend Build Check",
+			"type": "shell",
+			"command": "Set-Location web; & npm.cmd run build",
+			"isBackground": false
+		}
+	]
+}

@@ -1,20 +1,24 @@
 package com.ebike.rental.controller;
 
-import com.ebike.rental.entity.User;
-import com.ebike.rental.dto.UserDTO;
-import com.ebike.rental.dto.AuthResponse;
-import com.ebike.rental.dto.LoginRequest;
-import com.ebike.rental.dto.RegisterRequest;
-import com.ebike.rental.dto.GoogleAuthRequest;
-import com.ebike.rental.dto.ApiResponse;
-import com.ebike.rental.service.UserService;
-import com.ebike.rental.service.GoogleAuthService;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.ebike.rental.dto.ApiResponse;
+import com.ebike.rental.dto.AuthResponse;
+import com.ebike.rental.dto.GoogleAuthRequest;
+import com.ebike.rental.dto.LoginRequest;
+import com.ebike.rental.dto.RegisterRequest;
+import com.ebike.rental.entity.User;
+import com.ebike.rental.service.GoogleAuthService;
+import com.ebike.rental.service.UserService;
 
 @RestController
 @RequestMapping("/auth")

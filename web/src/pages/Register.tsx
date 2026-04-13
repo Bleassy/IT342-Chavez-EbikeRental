@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
   const [form, setForm] = useState({
-    username: "", email: "", firstName: "", lastName: "", password: "", confirmPassword: "", phone: "", address: "",
+    username: "", email: "", firstName: "", lastName: "", role: "USER", password: "", confirmPassword: "", phone: "", address: "",
   });
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -89,6 +89,17 @@ const Register = () => {
                 <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input className="pl-10" type="text" placeholder="123 Main St, City, State" value={form.address} onChange={(e) => update("address", e.target.value)} />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Register As</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={form.role}
+                onChange={(e) => update("role", e.target.value)}
+              >
+                <option value="USER">User</option>
+                <option value="ADMIN">Admin</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label>Password</Label>

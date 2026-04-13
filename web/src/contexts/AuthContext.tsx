@@ -104,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           password: data.password,
           firstName: data.firstName,
           lastName: data.lastName,
+          role: data.role,
           phone: data.phone || "",
           address: data.address || "",
         }),
@@ -119,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
-        role: "USER" as UserRole,
+        role: (authData.role || data.role || "USER") as UserRole,
       };
 
       setAuthState({ user, token: authData.token, isAuthenticated: true });

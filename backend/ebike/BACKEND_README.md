@@ -235,3 +235,59 @@ Content-Type: application/json
 - Email notifications
 - Real-time bike location tracking
 - User reviews and ratings system
+
+## Deploy on Render with Supabase
+
+Yes, you can deploy this backend to Render and use Supabase as your online database.
+
+### 1. Supabase database values
+
+From Supabase project settings, copy your PostgreSQL connection details:
+
+- Host
+- Port
+- Database name
+- Username
+- Password
+
+Build the JDBC URL in this format:
+
+```text
+jdbc:postgresql://<HOST>:<PORT>/<DATABASE>?sslmode=require
+```
+
+### 2. Render environment variables
+
+Set these in your Render service:
+
+```text
+SPRING_PROFILES_ACTIVE=prod
+SPRING_DATASOURCE_URL=jdbc:postgresql://<HOST>:<PORT>/<DATABASE>?sslmode=require
+SPRING_DATASOURCE_USERNAME=<USERNAME>
+SPRING_DATASOURCE_PASSWORD=<PASSWORD>
+JWT_SECRET=<LONG_RANDOM_SECRET>
+JWT_EXPIRATION=86400000
+GOOGLE_CLIENT_ID=<YOUR_GOOGLE_CLIENT_ID>
+GOOGLE_CLIENT_SECRET=<YOUR_GOOGLE_CLIENT_SECRET>
+```
+
+Notes:
+
+- Render automatically provides `PORT`, and the app now uses it.
+- Use a strong `JWT_SECRET` in production.
+- For Google OAuth, add your Render frontend callback URL in Google Cloud Console.
+
+### 3. Build and start commands on Render
+
+```text
+Build Command: ./mvnw clean package -DskipTests
+Start Command: java -jar target/ebike-0.0.1-SNAPSHOT.jar
+```
+
+### 4. Frontend API URL
+
+If you deploy the web app too, point it to your Render backend:
+
+```text
+VITE_API_URL=https://<your-render-backend-domain>
+```

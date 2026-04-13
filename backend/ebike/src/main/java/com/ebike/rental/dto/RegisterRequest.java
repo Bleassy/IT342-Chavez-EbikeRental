@@ -7,16 +7,18 @@ public class RegisterRequest {
     private String lastName;
     private String phone;
     private String address;
+    private String role;
 
     public RegisterRequest() {}
 
-    public RegisterRequest(String email, String password, String firstName, String lastName, String phone, String address) {
+    public RegisterRequest(String email, String password, String firstName, String lastName, String phone, String address, String role) {
         this.email = email;
         this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
         this.address = address;
+        this.role = role;
     }
 
     // Getters and Setters
@@ -37,4 +39,7 @@ public class RegisterRequest {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }

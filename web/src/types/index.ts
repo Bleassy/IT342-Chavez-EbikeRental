@@ -53,6 +53,7 @@ export interface RegisterData {
   email: string;
   firstName: string;
   lastName: string;
+  role: UserRole;
   password: string;
   confirmPassword: string;
   phone?: string;
@@ -62,4 +63,5 @@ export interface RegisterData {
 export interface LoginData {
   email: string;
   password: string;
+  role: UserRole;
 }

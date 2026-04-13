@@ -1,22 +1,26 @@
 package com.ebike.rental.service;
 
-import com.ebike.rental.entity.User;
-import com.ebike.rental.dto.GoogleAuthRequest;
-import com.ebike.rental.dto.AuthResponse;
-import com.ebike.rental.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Base64;
-import java.util.Optional;
-import java.util.UUID;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.ebike.rental.dto.AuthResponse;
+import com.ebike.rental.dto.GoogleAuthRequest;
+import com.ebike.rental.entity.User;
+import com.ebike.rental.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class GoogleAuthService {
@@ -99,10 +103,10 @@ public class GoogleAuthService {
             // Exchange authorization code for tokens
             String tokenRequestBody = String.format(
                     "code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&grant_type=authorization_code",
-                    java.net.URLEncoder.encode(code, "UTF-8"),
-                    java.net.URLEncoder.encode(googleClientId, "UTF-8"),
-                    java.net.URLEncoder.encode(googleClientSecret, "UTF-8"),
-                    java.net.URLEncoder.encode(redirectUri, "UTF-8")
+                    java.net.URLEncoder.encode(code, StandardCharsets.UTF_8),
+                    java.net.URLEncoder.encode(googleClientId, StandardCharsets.UTF_8),
+                    java.net.URLEncoder.encode(googleClientSecret, StandardCharsets.UTF_8),
+                    java.net.URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
             );
 
             HttpRequest tokenRequest = HttpRequest.newBuilder()
@@ -141,8 +145,11 @@ public class GoogleAuthService {
             }
 
             return objectMapper.readTree(userInfoResponse.body());
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException | IllegalArgumentException e) {
             System.err.println("Error exchanging Google auth code: " + e.getMessage());
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             return null;
         }
     }
@@ -155,7 +162,7 @@ public class GoogleAuthService {
             }
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
             return objectMapper.readTree(payload);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException | IOException e) {
             System.err.println("Error parsing Google token: " + e.getMessage());
             return null;
         }

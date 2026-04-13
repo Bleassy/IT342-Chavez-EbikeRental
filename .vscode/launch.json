@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "EbikeApplication",
+            "request": "launch",
+            "mainClass": "com.ebike.rental.EbikeApplication",
+            "projectName": ""
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"
