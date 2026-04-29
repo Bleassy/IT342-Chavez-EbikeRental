@@ -32,7 +32,7 @@ public class Booking {
     @Column(nullable = false)
     private BigDecimal totalPrice;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 1000)
     private String notes;
 
     @Column(nullable = false, updatable = false)
@@ -41,7 +41,7 @@ public class Booking {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
     private Payment payment;
 
     @PrePersist

@@ -17,7 +17,7 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
-        buildConfigField "String", "BASE_URL", "\"http://10.0.2.2:8080/api/\""
+        buildConfigField "String", "BASE_URL", "\"http://192.168.254.109:8083/api/\""
         buildConfigField "String", "GOOGLE_CLIENT_ID", "\"868871618431-t2dk1r46f8lucjlco9buupl1mdecagv3.apps.googleusercontent.com\""
     }
 

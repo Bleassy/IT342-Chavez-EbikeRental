@@ -22,7 +22,15 @@
             "name": "EbikeApplication",
             "request": "launch",
             "mainClass": "com.ebike.rental.EbikeApplication",
-            "projectName": "ebike"
+            "projectName": "ebike",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "prod",
+                "SPRING_DATASOURCE_URL": "jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require",
+                "SPRING_DATASOURCE_USERNAME": "neondb_owner",
+                "SPRING_DATASOURCE_PASSWORD": "npg_WyitZCd79pIN",
+                "PORT": "8083",
+                "ADMIN_BOOTSTRAP_EMAIL": "admin@ebike.com"
+            }
         }
     ]
 }

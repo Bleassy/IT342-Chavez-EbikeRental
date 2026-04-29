@@ -38,7 +38,7 @@ const AdminActiveRentals = () => {
   const handleComplete = async (id: string) => {
     try {
       await completeBooking(id);
-      toast({ title: "Booking completed" });
+      toast({ title: "✅ Booking completed", variant: "success" });
       loadData();
     } catch {
       toast({ title: "Failed to complete booking", variant: "destructive" });
@@ -48,7 +48,7 @@ const AdminActiveRentals = () => {
   const handleCancel = async (id: string) => {
     try {
       await cancelBooking(id);
-      toast({ title: "Booking cancelled" });
+      toast({ title: "✅ Booking cancelled", variant: "success" });
       loadData();
     } catch {
       toast({ title: "Failed to cancel booking", variant: "destructive" });

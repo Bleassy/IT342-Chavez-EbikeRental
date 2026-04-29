@@ -20,16 +20,26 @@ class AuthRepository(private val context: Context) {
             if (response.isSuccessful) {
                 response.body()?.let { apiResponse ->
                     if (apiResponse.success && apiResponse.data != null) {
-                        // Save token and user data
-                        tokenManager.saveToken(apiResponse.data.token)
-                        tokenManager.saveUserData(
-                            apiResponse.data.user.id,
-                            apiResponse.data.user.email,
-                            apiResponse.data.user.fullName,
-                            apiResponse.data.user.role,
-                            apiResponse.data.user.profilePic
+                        val authData = apiResponse.data
+                        // Convert AuthResponse to LoginResponse
+                        val user = User(
+                            id = authData.id,
+                            email = authData.email,
+                            fullName = "${authData.firstName} ${authData.lastName}",
+                            role = authData.role
                         )
-                        Result.success(apiResponse.data)
+                        val loginResponse = LoginResponse(token = authData.token, user = user)
+                        
+                        // Save token and user data
+                        tokenManager.saveToken(authData.token)
+                        tokenManager.saveUserData(
+                            authData.id,
+                            authData.email,
+                            "${authData.firstName} ${authData.lastName}",
+                            authData.role,
+                            null
+                        )
+                        Result.success(loginResponse)
                     } else {
                         Result.failure(Exception(apiResponse.message ?: "Login failed"))
                     }
@@ -48,27 +58,38 @@ class AuthRepository(private val context: Context) {
     suspend fun register(
         email: String,
         password: String,
-        fullName: String,
+        firstName: String,
+        lastName: String,
         phone: String? = null,
         address: String? = null
     ): Result<LoginResponse> {
         return try {
-            val request = RegisterRequest(email, password, fullName, phone, address)
+            val request = RegisterRequest(email, password, firstName, lastName, phone, address)
             val response = api.register(request)
             
             if (response.isSuccessful) {
                 response.body()?.let { apiResponse ->
                     if (apiResponse.success && apiResponse.data != null) {
-                        // Save token and user data
-                        tokenManager.saveToken(apiResponse.data.token)
-                        tokenManager.saveUserData(
-                            apiResponse.data.user.id,
-                            apiResponse.data.user.email,
-                            apiResponse.data.user.fullName,
-                            apiResponse.data.user.role,
-                            apiResponse.data.user.profilePic
+                        val authData = apiResponse.data
+                        // Convert AuthResponse to LoginResponse
+                        val user = User(
+                            id = authData.id,
+                            email = authData.email,
+                            fullName = "${authData.firstName} ${authData.lastName}",
+                            role = authData.role
                         )
-                        Result.success(apiResponse.data)
+                        val loginResponse = LoginResponse(token = authData.token, user = user)
+                        
+                        // Save token and user data
+                        tokenManager.saveToken(authData.token)
+                        tokenManager.saveUserData(
+                            authData.id,
+                            authData.email,
+                            "${authData.firstName} ${authData.lastName}",
+                            authData.role,
+                            null
+                        )
+                        Result.success(loginResponse)
                     } else {
                         Result.failure(Exception(apiResponse.message ?: "Registration failed"))
                     }
@@ -86,23 +107,33 @@ class AuthRepository(private val context: Context) {
     
     suspend fun loginWithGoogle(googleToken: String): Result<LoginResponse> {
         return try {
-            val request = AuthGoogleRequest(googleToken)
+            val request = AuthGoogleRequest(idToken = googleToken)
             val response = api.loginWithGoogle(request)
             
             if (response.isSuccessful) {
                 response.body()?.let { apiResponse ->
                     if (apiResponse.success && apiResponse.data != null) {
+                        val authData = apiResponse.data
+                        // Convert AuthResponse to LoginResponse
+                        val user = User(
+                            id = authData.id,
+                            email = authData.email,
+                            fullName = "${authData.firstName} ${authData.lastName}",
+                            role = authData.role
+                        )
+                        val loginResponse = LoginResponse(token = authData.token, user = user)
+                        
                         // Save token and user data
-                        tokenManager.saveToken(apiResponse.data.token)
+                        tokenManager.saveToken(authData.token)
                         tokenManager.saveGoogleToken(googleToken)
                         tokenManager.saveUserData(
-                            apiResponse.data.user.id,
-                            apiResponse.data.user.email,
-                            apiResponse.data.user.fullName,
-                            apiResponse.data.user.role,
-                            apiResponse.data.user.profilePic
+                            authData.id,
+                            authData.email,
+                            "${authData.firstName} ${authData.lastName}",
+                            authData.role,
+                            null
                         )
-                        Result.success(apiResponse.data)
+                        Result.success(loginResponse)
                     } else {
                         Result.failure(Exception(apiResponse.message ?: "Google login failed"))
                     }

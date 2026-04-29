@@ -20,11 +20,17 @@ public class BikeController {
     private BikeService bikeService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Bike>> createBike(@RequestBody Bike bike) {
+    public ResponseEntity<ApiResponse<BikeDTO>> createBike(@RequestBody Bike bike) {
         try {
             Bike createdBike = bikeService.createBike(bike);
+            // Convert to DTO to avoid circular references with bookings
+            Optional<BikeDTO> bikeDTO = bikeService.getBikeById(createdBike.getId());
+            if (bikeDTO.isPresent()) {
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(new ApiResponse<>(true, "Bike created successfully", bikeDTO.get()));
+            }
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new ApiResponse<>(true, "Bike created successfully", createdBike));
+                    .body(new ApiResponse<>(true, "Bike created successfully", null));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(false, "Failed to create bike: " + e.getMessage()));
@@ -97,11 +103,17 @@ public class BikeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Bike>> updateBike(@PathVariable Long id, @RequestBody Bike bikeDetails) {
+    public ResponseEntity<ApiResponse<BikeDTO>> updateBike(@PathVariable Long id, @RequestBody Bike bikeDetails) {
         try {
             Bike updatedBike = bikeService.updateBike(id, bikeDetails);
             if (updatedBike != null) {
-                return ResponseEntity.ok(new ApiResponse<>(true, "Bike updated successfully", updatedBike));
+                // Convert to DTO to avoid circular references with bookings
+                Optional<BikeDTO> bikeDTO = bikeService.getBikeById(id);
+                if (bikeDTO.isPresent()) {
+                    return ResponseEntity.ok(new ApiResponse<>(true, "Bike updated successfully", bikeDTO.get()));
+                }
+                // Fallback if DTO conversion fails
+                return ResponseEntity.ok(new ApiResponse<>(true, "Bike updated successfully", null));
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(new ApiResponse<>(false, "Bike not found"));

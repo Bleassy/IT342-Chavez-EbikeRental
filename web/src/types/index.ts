@@ -63,5 +63,5 @@ export interface RegisterData {
 export interface LoginData {
   email: string;
   password: string;
-  role: UserRole;
+  role?: UserRole;
 }

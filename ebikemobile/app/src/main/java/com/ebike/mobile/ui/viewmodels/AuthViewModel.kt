@@ -59,7 +59,8 @@ class AuthViewModel(private val context: Context) : ViewModel() {
     fun register(
         email: String,
         password: String,
-        fullName: String,
+        firstName: String,
+        lastName: String,
         phone: String? = null,
         address: String? = null
     ) {
@@ -67,7 +68,7 @@ class AuthViewModel(private val context: Context) : ViewModel() {
             _isLoading.value = true
             _errorMessage.value = null
             
-            val result = repository.register(email, password, fullName, phone, address)
+            val result = repository.register(email, password, firstName, lastName, phone, address)
             _loginResult.value = result
             
             if (result.isSuccess) {

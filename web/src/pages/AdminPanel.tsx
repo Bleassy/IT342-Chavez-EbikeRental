@@ -63,12 +63,32 @@ const AdminPanel = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: "new" | "edit") => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Convert to base64 so image persists to the database
+
+    // Compress image before converting to base64
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
-      if (target === "new") setNewBike({ ...newBike, image: base64 });
-      else if (editingBike) setEditingBike({ ...editingBike, image: base64 });
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas and compress image
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        // Resize to max 400px width while maintaining aspect ratio
+        const maxWidth = 400;
+        const scale = maxWidth / img.width;
+        canvas.width = maxWidth;
+        canvas.height = img.height * scale;
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Convert to base64 with compression (0.7 quality = 70%)
+        const base64 = canvas.toDataURL("image/jpeg", 0.7);
+        
+        if (target === "new") setNewBike({ ...newBike, image: base64 });
+        else if (editingBike) setEditingBike({ ...editingBike, image: base64 });
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
@@ -88,7 +108,7 @@ const AdminPanel = () => {
     };
     try {
       await createBike(payload);
-      toast({ title: "Bike added", description: `${brand} ${model} has been added to the fleet.` });
+      toast({ title: "✅ Bike added", description: `${brand} ${model} has been added to the fleet.`, variant: "success" });
       setNewBike({ name: "", brand: "", model: "", batteryLevel: 100, pricePerHour: 5, description: "", image: "", color: "Black", type: "STANDARD", location: "Downtown Station" });
       setShowAddForm(false);
       loadData();
@@ -100,7 +120,7 @@ const AdminPanel = () => {
   const handleDeleteBike = async (id: string) => {
     try {
       await deleteBike(id);
-      toast({ title: "Bike removed", description: "Bike has been removed from the fleet." });
+      toast({ title: "✅ Bike removed", description: "Bike has been removed from the fleet.", variant: "success" });
       loadData();
     } catch (err) {
       toast({ title: "Failed to delete bike", variant: "destructive" });
@@ -110,7 +130,7 @@ const AdminPanel = () => {
   const handleStatusChange = async (id: string, status: BikeStatus) => {
     try {
       await updateBikeStatus(id, status);
-      toast({ title: "Status updated" });
+      toast({ title: "✅ Status updated", variant: "success" });
       loadData();
     } catch (err) {
       toast({ title: "Failed to update status", variant: "destructive" });
@@ -120,7 +140,7 @@ const AdminPanel = () => {
   const handleCompleteBooking = async (id: string) => {
     try {
       await completeBooking(id);
-      toast({ title: "Booking completed" });
+      toast({ title: "✅ Booking completed", variant: "success" });
       loadData();
     } catch (err) {
       toast({ title: "Failed to complete booking", variant: "destructive" });
@@ -130,7 +150,7 @@ const AdminPanel = () => {
   const handleCancelBooking = async (id: string) => {
     try {
       await cancelBooking(id);
-      toast({ title: "Booking cancelled" });
+      toast({ title: "✅ Booking cancelled", variant: "success" });
       loadData();
     } catch (err) {
       toast({ title: "Failed to cancel booking", variant: "destructive" });
@@ -144,18 +164,25 @@ const AdminPanel = () => {
     const brand = parts[0] || "Generic";
     const model = parts.slice(1).join(" ") || editingBike.name;
     try {
-      await updateBike(editingBike.id, {
+      const result = await updateBike(editingBike.id, {
         model, brand,
         pricePerHour: editingBike.pricePerHour,
         batteryLevel: editingBike.batteryLevel,
         description: editingBike.description || "",
         imageUrl: editingBike.image,
       });
+      console.log("✅ Bike updated successfully:", result);
       setEditingBike(null);
-      toast({ title: "Bike updated" });
+      toast({ 
+        title: "✅ Bike updated successfully", 
+        description: "Changes have been saved.",
+        variant: "success"
+      });
       loadData();
     } catch (err) {
-      toast({ title: "Failed to update bike", variant: "destructive" });
+      console.error("❌ Update error:", err);
+      const errorMsg = err instanceof Error ? err.message : "Failed to update bike";
+      toast({ title: "❌ Update Error", description: errorMsg, variant: "destructive" });
     }
   };
 
@@ -163,16 +190,37 @@ const AdminPanel = () => {
   const handleInlineImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, bikeId: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Compress image before converting to base64
     const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64 = reader.result as string;
-      try {
-        await updateBike(bikeId, { imageUrl: base64 });
-        toast({ title: "Image uploaded", description: "Bike image has been updated." });
-        loadData();
-      } catch (err) {
-        toast({ title: "Failed to upload image", variant: "destructive" });
-      }
+    reader.onload = async (event) => {
+      const img = new Image();
+      img.onload = async () => {
+        // Create canvas and compress image
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        // Resize to max 400px width while maintaining aspect ratio
+        const maxWidth = 400;
+        const scale = maxWidth / img.width;
+        canvas.width = maxWidth;
+        canvas.height = img.height * scale;
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Convert to base64 with compression (0.7 quality = 70%)
+        const base64 = canvas.toDataURL("image/jpeg", 0.7);
+        
+        try {
+          await updateBike(bikeId, { imageUrl: base64 });
+          toast({ title: "✅ Image uploaded", description: "Bike image has been updated.", variant: "success" });
+          loadData();
+        } catch (err) {
+          toast({ title: "Failed to upload image", variant: "destructive" });
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };

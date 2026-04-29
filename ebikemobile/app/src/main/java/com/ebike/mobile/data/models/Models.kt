@@ -75,6 +75,18 @@ data class LoginRequest(
     val password: String
 ) : Parcelable
 
+// Actual response format from backend
+@Parcelize
+data class AuthResponse(
+    val id: Long,
+    val email: String,
+    val firstName: String,
+    val lastName: String,
+    val token: String,
+    val role: String
+) : Parcelable
+
+// Wrapper for backend response
 @Parcelize
 data class LoginResponse(
     val token: String,
@@ -85,7 +97,7 @@ data class LoginResponse(
 data class AuthApiResponse(
     val success: Boolean,
     val message: String,
-    val data: LoginResponse? = null,
+    val data: AuthResponse? = null,
     val errors: Map<String, String>? = null
 ) : Parcelable
 
@@ -93,14 +105,17 @@ data class AuthApiResponse(
 data class RegisterRequest(
     val email: String,
     val password: String,
-    val fullName: String,
+    val firstName: String,
+    val lastName: String,
     val phone: String? = null,
     val address: String? = null
 ) : Parcelable
 
 @Parcelize
 data class AuthGoogleRequest(
-    val googleToken: String
+    val idToken: String? = null,
+    val code: String? = null,
+    val redirectUri: String? = null
 ) : Parcelable
 
 data class ApiResponse<T>(

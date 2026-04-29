@@ -55,10 +55,10 @@ public class Bike {
     @Column(nullable = false)
     private BikeStatus status;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 1000)
     private String description;
 
-    @Lob
+    @Column(length = 1000000)
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)

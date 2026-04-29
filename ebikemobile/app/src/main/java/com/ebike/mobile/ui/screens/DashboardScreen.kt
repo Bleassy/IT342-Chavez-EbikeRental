@@ -1,6 +1,7 @@
 package com.ebike.mobile.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -183,7 +184,8 @@ fun ActionButton(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp),
+            .height(80.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
         shadowElevation = 2.dp

@@ -11,7 +11,7 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;
 
@@ -29,7 +29,7 @@ public class Payment {
     @Column(unique = true)
     private String transactionId;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 1000)
     private String notes;
 
     @Column(nullable = false, updatable = false)
@@ -78,7 +78,7 @@ public class Payment {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     public enum PaymentMethod {
-        CREDIT_CARD, DEBIT_CARD, PAYPAL, WALLET
+        CREDIT_CARD, DEBIT_CARD, PAYPAL, WALLET, GCASH
     }
 
     public enum PaymentStatus {

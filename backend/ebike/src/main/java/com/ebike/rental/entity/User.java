@@ -40,12 +40,12 @@ public class User {
     @Column(unique = true)
     private String phone;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 500)
     private String address;
 
     private String nickname;
 
-    @Lob
+    @Column(length = 1000000)
     private String profilePictureUrl;
 
     @Enumerated(EnumType.STRING)

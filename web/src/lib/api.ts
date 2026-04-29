@@ -4,17 +4,33 @@ function getAuthHeaders(): HeadersInit {
   const stored = localStorage.getItem("ebike_auth");
   if (stored) {
     try {
-      const { token } = JSON.parse(stored);
-      if (token) return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-    } catch { /* ignore */ }
+      const parsed = JSON.parse(stored);
+      const token = parsed.token;
+      if (token) {
+        console.log("📤 Sending token:", token.substring(0, 20) + "...");
+        return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+      }
+    } catch (e) { 
+      console.error("❌ Error parsing auth:", e);
+    }
   }
+  console.log("⚠️ No token found, sending unauthenticated request");
   return { "Content-Type": "application/json" };
 }
 
 async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}/api${path}`, { headers: getAuthHeaders() });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
+  const url = `${API_URL}/api${path}`;
+  console.log(`🔍 GET ${url}`);
+  const res = await fetch(url, { headers: getAuthHeaders() });
+  
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`❌ API Error ${res.status}:`, text.substring(0, 200));
+    throw new Error(`API error ${res.status}: ${text.substring(0, 100)}`);
+  }
+  
   const json = await res.json();
+  console.log(`✅ Response:`, json);
   return json.data ?? json;
 }
 
@@ -212,9 +228,16 @@ export async function updateBike(id: string, payload: Partial<CreateBikePayload>
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+  
   const json = await res.json();
-  return json.data ?? json;
+  
+  // Handle both response formats
+  if (json.success === false || !res.ok) {
+    throw new Error(json.message || `Update failed: ${res.status}`);
+  }
+  
+  // Return bike data - handle both wrapped and unwrapped responses
+  return json.data || json;
 }
 
 export async function deleteBike(id: string): Promise<void> {

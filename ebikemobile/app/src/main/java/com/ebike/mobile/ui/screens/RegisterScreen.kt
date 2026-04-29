@@ -30,7 +30,8 @@ fun RegisterScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel
 ) {
-    var fullName by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -129,15 +130,37 @@ fun RegisterScreen(
             Column(
                 modifier = Modifier.padding(24.dp)
             ) {
-                // Full Name Field
+                // First Name Field
                 TextField(
-                    value = fullName,
-                    onValueChange = { fullName = it },
-                    label = { Text("Full Name") },
+                    value = firstName,
+                    onValueChange = { firstName = it },
+                    label = { Text("First Name") },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Person,
-                            contentDescription = "Name",
+                            contentDescription = "First Name",
+                            tint = Color(0xFF10B981)
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color(0xFF10B981),
+                        unfocusedIndicatorColor = Color.Gray
+                    )
+                )
+                
+                // Last Name Field
+                TextField(
+                    value = lastName,
+                    onValueChange = { lastName = it },
+                    label = { Text("Last Name") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Last Name",
                             tint = Color(0xFF10B981)
                         )
                     },
@@ -257,11 +280,12 @@ fun RegisterScreen(
                 // Sign Up Button
                 Button(
                     onClick = {
-                        if (fullName.isNotBlank() && email.isNotBlank() && password.isNotBlank()) {
+                        if (firstName.isNotBlank() && lastName.isNotBlank() && email.isNotBlank() && password.isNotBlank()) {
                             authViewModel.register(
                                 email = email,
                                 password = password,
-                                fullName = fullName,
+                                firstName = firstName,
+                                lastName = lastName,
                                 phone = phone.takeIf { it.isNotBlank() },
                                 address = address.takeIf { it.isNotBlank() }
                             )
@@ -274,7 +298,7 @@ fun RegisterScreen(
                         containerColor = Color(0xFF10B981),
                         disabledContainerColor = Color(0xFF10B981).copy(alpha = 0.5f)
                     ),
-                    enabled = !isLoading && fullName.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
+                    enabled = !isLoading && firstName.isNotBlank() && lastName.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     if (isLoading) {

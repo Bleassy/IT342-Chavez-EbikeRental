@@ -46,7 +46,7 @@ const RentalHistory = () => {
     setCancellingId(bookingId);
     try {
       await cancelBooking(bookingId);
-      toast({ title: "Booking cancelled", description: "Your booking has been cancelled and the bike is now available." });
+      toast({ title: "✅ Booking cancelled", description: "Your booking has been cancelled and the bike is now available.", variant: "success" });
       loadBookings();
     } catch {
       toast({ title: "Failed to cancel", description: "Could not cancel the booking.", variant: "destructive" });

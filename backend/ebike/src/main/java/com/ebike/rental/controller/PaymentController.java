@@ -3,12 +3,15 @@ package com.ebike.rental.controller;
 import com.ebike.rental.entity.Payment;
 import com.ebike.rental.dto.ApiResponse;
 import com.ebike.rental.service.PaymentService;
+import com.ebike.rental.service.GCashPaymentService;
+import com.ebike.rental.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/payments")
@@ -17,6 +20,12 @@ public class PaymentController {
 
     @Autowired
     private PaymentService paymentService;
+
+    @Autowired
+    private GCashPaymentService gcashPaymentService;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     @PostMapping
     public ResponseEntity<ApiResponse<Payment>> processPayment(
@@ -34,6 +43,87 @@ public class PaymentController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(false, "Failed to process payment: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/gcash/initiate")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> initiateGCashPayment(
+            @RequestParam Long bookingId) {
+        try {
+            Optional<com.ebike.rental.entity.Booking> booking = 
+                    bookingRepository.findById(bookingId);
+            
+            if (booking.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiResponse<>(false, "Invalid booking ID"));
+            }
+
+            Double amount = booking.get().getTotalPrice().doubleValue();
+            String description = "E-Bike Rental - Booking #" + bookingId;
+
+            Map<String, Object> result = gcashPaymentService.initiatePayment(
+                    amount, description, bookingId);
+            
+            if ((Boolean) result.get("success")) {
+                return ResponseEntity.ok(
+                        new ApiResponse<>(true, "GCash payment initiated", result));
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new ApiResponse<>(false, (String) result.get("message")));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to initiate GCash payment: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/gcash/callback")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> gcashPaymentCallback(
+            @RequestBody Map<String, Object> webhookData) {
+        try {
+            Map<String, Object> result = gcashPaymentService.verifyPaymentCallback(webhookData);
+            
+            if ((Boolean) result.get("success")) {
+                return ResponseEntity.ok(
+                        new ApiResponse<>(true, "Callback processed successfully", result));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiResponse<>(false, (String) result.get("message")));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to process callback: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/gcash/status")
+    public ResponseEntity<ApiResponse<String>> getGCashStatus() {
+        try {
+            String status = gcashPaymentService.getPayMongoStatus();
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "PayMongo status retrieved", status));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to retrieve PayMongo status: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/gcash/payment/{paymentId}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getGCashPaymentStatus(
+            @PathVariable String paymentId) {
+        try {
+            Map<String, Object> result = gcashPaymentService.getPaymentStatus(paymentId);
+            
+            if ((Boolean) result.get("success")) {
+                return ResponseEntity.ok(
+                        new ApiResponse<>(true, "Payment status retrieved", result));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ApiResponse<>(false, (String) result.get("message")));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Error retrieving payment status: " + e.getMessage()));
         }
     }
 

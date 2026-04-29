@@ -91,17 +91,6 @@ const Register = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Register As</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={form.role}
-                onChange={(e) => update("role", e.target.value)}
-              >
-                <option value="USER">User</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </div>
-            <div className="space-y-2">
               <Label>Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

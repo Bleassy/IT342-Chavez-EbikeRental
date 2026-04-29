@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"USER" | "ADMIN">("USER");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const { login } = useAuth();
@@ -49,12 +48,12 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const success = await login({ email, password, role });
+    const success = await login({ email, password });
     setLoading(false);
     if (success) {
       navigate("/");
     } else {
-      toast({ title: "Login failed", description: "Invalid credentials or role mismatch.", variant: "destructive" });
+      toast({ title: "Login failed", description: "Invalid credentials.", variant: "destructive" });
     }
   };
 
@@ -101,18 +100,6 @@ const Login = () => {
                   required
                 />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Login As</Label>
-              <select
-                id="role"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={role}
-                onChange={(e) => setRole(e.target.value as "USER" | "ADMIN")}
-              >
-                <option value="USER">User</option>
-                <option value="ADMIN">Admin</option>
-              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -173,10 +160,19 @@ const Login = () => {
           </p>
 
           <div className="mt-8 rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">Demo Accounts:</p>
-            <p>User: john@example.com</p>
-            <p>Admin: admin@ebike.com</p>
-            <p className="mt-1 text-xs">Any password with 4+ characters works</p>
+            <p className="font-medium text-foreground mb-2">Demo Accounts:</p>
+            <div className="space-y-2 text-xs">
+              <div>
+                <p className="font-medium text-foreground">Admin:</p>
+                <p>Email: admin@ebike.com</p>
+                <p>Password: admin123</p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">User:</p>
+                <p>Email: john.doe@example.com</p>
+                <p>Password: password123</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

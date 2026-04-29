@@ -40,6 +40,13 @@ fun LoginScreen(
     val errorMessage by authViewModel.errorMessage.collectAsState()
     val loginResult by authViewModel.loginResult.collectAsState()
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    val googleSignInIntent by authViewModel.googleSignInIntent.collectAsState()
+    
+    LaunchedEffect(googleSignInIntent) {
+        if (googleSignInIntent != null) {
+            googleSignInLauncher?.launch(googleSignInIntent)
+        }
+    }
     
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
@@ -234,10 +241,6 @@ fun LoginScreen(
                 OutlinedButton(
                     onClick = {
                         authViewModel.initiateGoogleSignIn()
-                        val signInIntent = authViewModel.googleSignInIntent.value
-                        if (signInIntent != null) {
-                            googleSignInLauncher?.launch(signInIntent)
-                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
