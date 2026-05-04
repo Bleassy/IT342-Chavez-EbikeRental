@@ -80,11 +80,11 @@ const BookingPage = () => {
     setSubmitting(true);
     try {
       const response = await createBooking(user.id, bikeId, formatLocalISO(startTime), formatLocalISO(endTime));
-      const newBookingId = response?.id || response?.data?.id;
+      const newBookingId = response?.id;
       if (newBookingId) {
         setBookingId(newBookingId);
         setStage("paymentMethod");
-        toast({ title: "Booking created!", description: "Now choose a payment method." });
+        toast({ title: "✅ Booking created!", description: "Now choose a payment method." });
       } else {
         throw new Error("No booking ID returned");
       }
