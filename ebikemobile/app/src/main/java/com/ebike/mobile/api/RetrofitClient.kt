@@ -24,7 +24,7 @@ object RetrofitClient {
             savedUrl
         } else {
             // Default - use your computer's actual IP address on the network
-            val defaultUrl = "http://192.168.254.109:8083/api/"
+            val defaultUrl = "http://192.168.254.105:8083/api/"
             Log.d(TAG, "Using default API URL: $defaultUrl")
             defaultUrl
         }

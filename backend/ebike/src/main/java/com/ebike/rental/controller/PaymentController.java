@@ -4,6 +4,7 @@ import com.ebike.rental.entity.Payment;
 import com.ebike.rental.dto.ApiResponse;
 import com.ebike.rental.service.PaymentService;
 import com.ebike.rental.service.GCashPaymentService;
+import com.ebike.rental.service.StripePaymentService;
 import com.ebike.rental.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,9 @@ public class PaymentController {
 
     @Autowired
     private GCashPaymentService gcashPaymentService;
+
+    @Autowired
+    private StripePaymentService stripePaymentService;
 
     @Autowired
     private BookingRepository bookingRepository;
@@ -245,4 +249,87 @@ public class PaymentController {
                     .body(new ApiResponse<>(false, "Failed to delete payment: " + e.getMessage()));
         }
     }
+
+    // ==================== STRIPE PAYMENT ENDPOINTS ====================
+
+    @GetMapping("/stripe/config")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getStripeConfig() {
+        try {
+            if (!stripePaymentService.isStripeEnabled()) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body(new ApiResponse<>(false, "Stripe is not enabled"));
+            }
+
+            Map<String, Object> config = new java.util.HashMap<>();
+            config.put("publishableKey", stripePaymentService.getPublishableKey());
+            config.put("enabled", true);
+
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "Stripe configuration retrieved", config));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to get Stripe config: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/stripe/create-payment-intent")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createStripePaymentIntent(
+            @RequestParam Long bookingId,
+            @RequestParam String customerId) {
+        try {
+            if (!stripePaymentService.isStripeEnabled()) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body(new ApiResponse<>(false, "Stripe is not enabled"));
+            }
+
+            Optional<com.ebike.rental.entity.Booking> booking = bookingRepository.findById(bookingId);
+            if (booking.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiResponse<>(false, "Invalid booking ID"));
+            }
+
+            Double amount = booking.get().getTotalPrice().doubleValue();
+            Map<String, Object> paymentIntent = stripePaymentService.createPaymentIntent(
+                    bookingId, amount, customerId);
+
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "Payment intent created successfully", paymentIntent));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to create payment intent: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/stripe/payment-intent/{paymentIntentId}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getStripePaymentIntentStatus(
+            @PathVariable String paymentIntentId) {
+        try {
+            if (!stripePaymentService.isStripeEnabled()) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body(new ApiResponse<>(false, "Stripe is not enabled"));
+            }
+
+            Map<String, Object> paymentIntentStatus = stripePaymentService.getPaymentIntentStatus(paymentIntentId);
+
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "Payment intent status retrieved", paymentIntentStatus));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to get payment intent status: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/stripe/webhook")
+    public ResponseEntity<String> handleStripeWebhook(@RequestBody String payload) {
+        try {
+            // Webhook handling logic will be implemented to update payment status
+            // when Stripe notifies of payment success/failure
+            System.out.println("Stripe webhook received");
+            return ResponseEntity.ok("Webhook received");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Webhook processing failed: " + e.getMessage());
+        }
+    }
 }
+

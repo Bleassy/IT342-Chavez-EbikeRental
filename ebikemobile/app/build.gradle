@@ -17,7 +17,7 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
-        buildConfigField "String", "BASE_URL", "\"http://192.168.254.109:8083/api/\""
+        buildConfigField "String", "BASE_URL", "\"http://192.168.254.105:8083/api/\""
         buildConfigField "String", "GOOGLE_CLIENT_ID", "\"868871618431-t2dk1r46f8lucjlco9buupl1mdecagv3.apps.googleusercontent.com\""
     }
 
@@ -45,6 +45,16 @@ android {
     
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.8'
+    }
+
+    // Workaround for AAPT2 daemon issue without C++ runtime
+    aaptOptions {
+        cruncherEnabled = false
+        noCompress 'webp'
+    }
+
+    packagingOptions {
+        exclude 'META-INF/proguard/androidx-*.pro'
     }
 }
 

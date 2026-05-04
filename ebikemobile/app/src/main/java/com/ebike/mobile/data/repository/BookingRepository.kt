@@ -113,6 +113,27 @@ class BookingRepository(private val context: Context) {
         }
     }
     
+    suspend fun getAdminBookings(page: Int = 0, size: Int = 20): Result<List<Booking>> {
+        return try {
+            val response = api.getAllBookings(page, size)
+            
+            if (response.isSuccessful) {
+                response.body()?.let { responseBody ->
+                    @Suppress("UNCHECKED_CAST")
+                    val bookings = (responseBody["content"] as? List<Map<String, Any>>)
+                        ?.mapNotNull { mapToBooking(it) }
+                        ?: emptyList()
+                    Result.success(bookings)
+                } ?: Result.failure(Exception("Empty response body"))
+            } else {
+                Result.failure(Exception(response.errorBody()?.string() ?: "Failed to fetch admin bookings"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Get admin bookings error")
+            Result.failure(e)
+        }
+    }
+    
     private fun mapToBooking(map: Map<String, Any>): Booking? {
         return try {
             Booking(
