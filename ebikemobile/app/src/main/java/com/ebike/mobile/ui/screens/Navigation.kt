@@ -90,5 +90,9 @@ fun AppNavigation(
         composable(Screen.Profile.route) {
             ProfileScreen(navController, authViewModel)
         }
+        
+        composable(Screen.AdminPanel.route) {
+            AdminPanelScreen(navController)
+        }
     }
 }

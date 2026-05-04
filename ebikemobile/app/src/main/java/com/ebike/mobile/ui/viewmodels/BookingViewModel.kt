@@ -17,6 +17,9 @@ class BookingViewModel(private val context: Context) : ViewModel() {
     private val _bookings = MutableStateFlow<List<Booking>>(emptyList())
     val bookings: StateFlow<List<Booking>> = _bookings
     
+    private val _adminBookings = MutableStateFlow<List<Booking>>(emptyList())
+    val adminBookings: StateFlow<List<Booking>> = _adminBookings
+    
     private val _selectedBooking = MutableStateFlow<Booking?>(null)
     val selectedBooking: StateFlow<Booking?> = _selectedBooking
     
@@ -126,6 +129,24 @@ class BookingViewModel(private val context: Context) : ViewModel() {
             }.onFailure { error ->
                 _errorMessage.value = error.message ?: "Failed to complete booking"
                 Timber.e(error, "Complete booking error")
+            }
+            
+            _isLoading.value = false
+        }
+    }
+    
+    fun getAdminBookings(page: Int = 0) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            
+            val result = repository.getAdminBookings(page)
+            
+            result.onSuccess { bookingList ->
+                _adminBookings.value = bookingList
+            }.onFailure { error ->
+                _errorMessage.value = error.message ?: "Failed to fetch admin bookings"
+                Timber.e(error, "Get admin bookings error")
             }
             
             _isLoading.value = false
