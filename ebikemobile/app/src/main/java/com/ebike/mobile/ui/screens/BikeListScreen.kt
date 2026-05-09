@@ -147,12 +147,12 @@ fun BikeCard(bike: Bike, onClick: () -> Unit) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = bike.name,
+                    text = bike.name ?: "Unknown Bike",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Black
                 )
                 Text(
-                    text = bike.model,
+                    text = bike.model ?: "Standard",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     modifier = Modifier.padding(top = 4.dp)

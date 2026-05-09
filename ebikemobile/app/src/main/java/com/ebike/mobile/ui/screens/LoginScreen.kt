@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.ebike.mobile.MainActivity
 import com.ebike.mobile.ui.viewmodels.AuthViewModel
+import timber.log.Timber
 
 @Composable
 fun LoginScreen(
@@ -42,21 +43,38 @@ fun LoginScreen(
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
     val googleSignInIntent by authViewModel.googleSignInIntent.collectAsState()
     
+    // Set callback FIRST, before launching intent
+    LaunchedEffect(mainActivity) {
+        mainActivity?.let { activity ->
+            activity.googleSignInCallback = { idToken, email, displayName, photoUrl ->
+                Timber.d("Google Sign-In callback received: $email")
+                authViewModel.handleGoogleSignInResult(idToken, email, displayName, photoUrl)
+            }
+            activity.googleSignInErrorCallback = { message ->
+                Timber.e("Google Sign-In error: $message")
+                authViewModel.clearError()
+            }
+        }
+    }
+    
     LaunchedEffect(googleSignInIntent) {
         if (googleSignInIntent != null) {
+            Timber.d("Launching Google Sign-In intent")
             googleSignInLauncher?.launch(googleSignInIntent)
         }
     }
     
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
+            Timber.d("🎯 isLoggedIn = true, navigating to Dashboard")
             navController.navigate(Screen.Dashboard.route) {
                 popUpTo(Screen.Login.route) { inclusive = true }
             }
         }
     }
     
-    // Handle Google Sign-In callback
+    // Handle Google Sign-In callback - DEPRECATED, keeping for reference
+    /*
     LaunchedEffect(mainActivity) {
         mainActivity?.let { activity ->
             activity.googleSignInCallback = { idToken, email, displayName, photoUrl ->
@@ -68,6 +86,7 @@ fun LoginScreen(
             }
         }
     }
+    */
     
     Column(
         modifier = Modifier

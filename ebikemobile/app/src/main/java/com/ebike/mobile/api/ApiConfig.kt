@@ -15,7 +15,7 @@ object ApiConfig {
     
     // Common server URLs
     val URLS = mapOf(
-        "Local (Physical Device)" to "http://192.168.254.105:8083/api/",
+        "Local (Physical Device)" to "http://192.168.254.101nn   :8083/api/",
         "Emulator" to "http://10.0.2.2:8083/api/",
         "Production" to "http://your-production-domain.com/api/",
         "Custom" to ""
@@ -32,7 +32,7 @@ object ApiConfig {
             Log.d(TAG, "Using saved API URL: $saved")
             saved
         } else {
-            val default = "http://192.168.254.105:8083/api/"
+            val default = "http://192.168.254.101:8083/api/"
             Log.d(TAG, "Using default API URL: $default")
             default
         }

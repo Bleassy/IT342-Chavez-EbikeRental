@@ -139,7 +139,7 @@
 		{
 			"label": "Restart Backend Promote Admin",
 			"type": "shell",
-			"command": "$procId=(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess); if ($procId) { Stop-Process -Id $procId -Force; Write-Output \"Stopped process $procId on 8083\" } ; Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require'; $env:SPRING_DATASOURCE_USERNAME='neondb_owner'; $env:SPRING_DATASOURCE_PASSWORD='npg_WyitZCd79pIN'; $env:PORT='8083'; $env:ADMIN_BOOTSTRAP_EMAIL='blisschavez1@gmail.com'; & .\\mvnw.cmd spring-boot:run",
+			"command": "$procId=(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess); if ($procId) { Stop-Process -Id $procId -Force; Write-Output \"Stopped process $procId on 8083\" } ; Set-ExecutionPolicy -Scope Process Bypass -Force; Set-Location backend/ebike; $env:SPRING_PROFILES_ACTIVE='prod'; $env:SPRING_DATASOURCE_URL='jdbc:postgresql://ep-royal-paper-a1e31ukk-pooler.ap-southeast-1.aws.neon.tech/ebike_rental?sslmode=require&channelBinding=require'; $env:SPRING_DATASOURCE_USERNAME='neondb_owner'; $env:SPRING_DATASOURCE_PASSWORD='npg_WyitZCd79pIN'; $env:PORT='8083'; $env:ADMIN_BOOTSTRAP_EMAIL='admin@ebike.com'; & .\\mvnw.cmd spring-boot:run",
 			"isBackground": true
 		},
 		{

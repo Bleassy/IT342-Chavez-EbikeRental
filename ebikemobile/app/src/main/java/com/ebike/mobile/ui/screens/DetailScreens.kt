@@ -23,6 +23,7 @@ import com.ebike.mobile.ui.viewmodels.AuthViewModel
 import com.ebike.mobile.ui.viewmodels.BikeViewModel
 import com.ebike.mobile.ui.viewmodels.BookingViewModel
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
@@ -39,6 +40,8 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
     var showDateTimePicker by remember { mutableStateOf(false) }
     var selectedStartTime by remember { mutableStateOf("") }
     var selectedEndTime by remember { mutableStateOf("") }
+    var hours by remember { mutableStateOf(1) }
+    var bookingError by remember { mutableStateOf("") }
     
     LaunchedEffect(bikeId) {
         bikeViewModel.getBikeDetail(bikeId)
@@ -143,23 +146,50 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // Display bike name/model
+                        val displayName = bike.name ?: bike.bikeCode ?: bike.model ?: "Bike #${bike.id}"
                         Text(
-                            text = bike.name,
+                            text = displayName ?: "Unknown Bike",
                             style = MaterialTheme.typography.titleLarge,
                             color = Color.Black
                         )
                         
+                        // Display model and brand
+                        val modelText = when {
+                            !bike.model.isNullOrEmpty() && !bike.brand.isNullOrEmpty() -> "${bike.brand} ${bike.model}"
+                            !bike.model.isNullOrEmpty() -> "Model: ${bike.model}"
+                            !bike.brand.isNullOrEmpty() -> "Brand: ${bike.brand}"
+                            else -> "Standard Bike"
+                        }
                         Text(
-                            text = "Model: ${bike.model}",
+                            text = modelText,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.Gray
                         )
                         
+                        // Display color
+                        val colorText = bike.color?.let { "Color: $it" } ?: "Color: Unknown"
                         Text(
-                            text = "Color: ${bike.color}",
+                            text = colorText,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.Gray
                         )
+                        
+                        // Display bike code and year if available
+                        if (!bike.bikeCode.isNullOrEmpty() || bike.year != null) {
+                            val bikeCodeText = buildString {
+                                bike.bikeCode?.let { append("Code: $it") }
+                                if (bike.year != null && !bike.bikeCode.isNullOrEmpty()) append(" | ")
+                                bike.year?.let { append("Year: $it") }
+                            }
+                            if (bikeCodeText.isNotEmpty()) {
+                                Text(
+                                    text = bikeCodeText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
                         
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -184,18 +214,59 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color.Gray
                                 )
+                                val hourlyPrice = if (bike.pricePerHour > 0) bike.pricePerHour else bike.hourlyRate
                                 Text(
-                                    text = "₹${bike.hourlyRate}",
+                                    text = "₹${String.format("%.2f", hourlyPrice)}",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = Color(0xFF10B981)
                                 )
                             }
+                            
+                            if (!bike.location.isNullOrEmpty()) {
+                                Column {
+                                    Text(
+                                        text = "Location",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.Gray
+                                    )
+                                    Text(
+                                        text = bike.location ?: "N/A",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF10B981),
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // Display description if available
+                        if (!bike.description.isNullOrEmpty()) {
+                            Text(
+                                text = bike.description ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+                        
+                        // Display condition and type if available
+                        val typeCondition = buildString {
+                            bike.type?.let { append("Type: $it") }
+                            if (!bike.type.isNullOrEmpty() && !bike.condition.isNullOrEmpty()) append(" | ")
+                            bike.condition?.let { append("Condition: $it") }
+                        }
+                        if (typeCondition.isNotEmpty()) {
+                            Text(
+                                text = typeCondition,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
                         }
                     }
                 }
                 
                 // Book Button
-                if (bike.status == "AVAILABLE") {
+                val isAvailable = bike.status?.uppercase() == "AVAILABLE"
+                if (isAvailable) {
                     Button(
                         onClick = { showDateTimePicker = true },
                         modifier = Modifier
@@ -228,7 +299,7 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Not Available",
+                                text = "Status: ${bike.status ?: "Unknown"}",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = Color.Gray
                             )
@@ -254,6 +325,131 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                 }
             }
         }
+    }
+    
+    // Booking Date/Time Picker Dialog
+    if (showDateTimePicker && selectedBike != null) {
+        AlertDialog(
+            onDismissRequest = { showDateTimePicker = false },
+            title = { Text("Book ${selectedBike!!.name}") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (bookingError.isNotEmpty()) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFFFEBEE)
+                        ) {
+                            Text(
+                                text = bookingError,
+                                color = Color(0xFFC62828),
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+                    
+                    Text(
+                        text = "Hourly Rate: ₹${selectedBike!!.hourlyRate}/hour",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                    
+                    Text(
+                        text = "Duration (hours)",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = { if (hours > 1) hours-- },
+                            modifier = Modifier
+                                .width(48.dp)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE0E0E0)
+                            )
+                        ) {
+                            Text("-", color = Color.Black, fontSize = MaterialTheme.typography.titleMedium.fontSize)
+                        }
+                        
+                        Text(
+                            text = hours.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        Button(
+                            onClick = { if (hours < 24) hours++ },
+                            modifier = Modifier
+                                .width(48.dp)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE0E0E0)
+                            )
+                        ) {
+                            Text("+", color = Color.Black, fontSize = MaterialTheme.typography.titleMedium.fontSize)
+                        }
+                    }
+                    
+                    Text(
+                        text = "Estimated Total: ₹${hours * selectedBike!!.hourlyRate}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF10B981),
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (selectedBike != null && hours > 0) {
+                            scope.launch {
+                                // Generate current timestamp for start time
+                                val now = java.time.LocalDateTime.now()
+                                val startTime = now.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                                // Add hours for end time
+                                val endTime = now.plusHours(hours.toLong()).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                                
+                                bookingViewModel.createBooking(
+                                    bikeId = selectedBike!!.id,
+                                    startTime = startTime,
+                                    endTime = endTime
+                                )
+                                showDateTimePicker = false
+                                hours = 1
+                            }
+                        } else {
+                            bookingError = "Please select valid duration"
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF10B981)
+                    )
+                ) {
+                    Text("Confirm Booking", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDateTimePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -812,8 +1008,7 @@ fun ProfileScreen(
     authViewModel: AuthViewModel
 ) {
     val context = LocalContext.current
-    val currentUser = remember { mutableStateOf<com.ebike.mobile.data.models.User?>(null) }
-    val isLoading = remember { mutableStateOf(false) }
+    val currentUser by authViewModel.currentUser.collectAsState()
     val editMode = remember { mutableStateOf(false) }
     
     var fullName by remember { mutableStateOf("") }
@@ -821,9 +1016,22 @@ fun ProfileScreen(
     var phone by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     
-    LaunchedEffect(Unit) {
-        isLoading.value = true
-        // Load user profile from authViewModel context
+    // Update form fields when user data changes (real-time)
+    LaunchedEffect(currentUser) {
+        currentUser?.let { user ->
+            fullName = user.fullName
+            email = user.email
+            phone = user.phone ?: ""
+            address = user.address ?: ""
+            Timber.d("✅ Profile synced: ${user.email} (${user.fullName})")
+            Timber.d("   Phone: $phone, Address: $address")
+        } ?: run {
+            Timber.w("⚠️ currentUser is NULL - not logged in")
+            fullName = ""
+            email = ""
+            phone = ""
+            address = ""
+        }
     }
     
     Column(
@@ -881,6 +1089,31 @@ fun ProfileScreen(
         }
         
         // Profile Content
+        if (currentUser == null) {
+            // Not logged in
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Not logged in",
+                        modifier = Modifier.size(48.dp),
+                        tint = Color(0xFF10B981)
+                    )
+                    Text(
+                        text = "Please log in to view your profile",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 16.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            // Logged in - show profile
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -918,9 +1151,9 @@ fun ProfileScreen(
                         modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        ProfileField("Full Name", email)
+                        ProfileField("Full Name", fullName.ifEmpty { "Not provided" })
                         Divider()
-                        ProfileField("Email", email)
+                        ProfileField("Email", email.ifEmpty { "Not provided" })
                         Divider()
                         ProfileField("Phone", phone.ifEmpty { "Not provided" })
                         Divider()
@@ -1010,6 +1243,7 @@ fun ProfileScreen(
                 )
                 Text("Logout", color = Color.White)
             }
+        }
         }
     }
 }

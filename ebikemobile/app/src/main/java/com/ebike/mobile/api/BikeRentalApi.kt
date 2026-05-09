@@ -34,7 +34,7 @@ interface BikeRentalApi {
     ): Response<Map<String, Any>>
     
     @GET("bikes/{id}")
-    suspend fun getBikeDetail(@Path("id") bikeId: Long): Response<Bike>
+    suspend fun getBikeDetail(@Path("id") bikeId: Long): Response<ApiResponse<Bike>>
     
     @GET("bikes/search")
     suspend fun searchBikes(@Query("query") query: String): Response<List<Bike>>
