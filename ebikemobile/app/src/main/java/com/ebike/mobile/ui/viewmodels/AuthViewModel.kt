@@ -9,6 +9,7 @@ import com.ebike.mobile.data.models.LoginResponse
 import com.ebike.mobile.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -34,6 +35,9 @@ class AuthViewModel(private val context: Context) : ViewModel() {
     private val _googleSignInIntent = MutableStateFlow<android.content.Intent?>(null)
     val googleSignInIntent: StateFlow<android.content.Intent?> = _googleSignInIntent
     
+    private val _currentUser = MutableStateFlow<com.ebike.mobile.data.models.User?>(null)
+    val currentUser: StateFlow<com.ebike.mobile.data.models.User?> = _currentUser
+    
     init {
         checkLoginStatus()
     }
@@ -42,14 +46,20 @@ class AuthViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+            Timber.d("Login attempt for: $email")
             
             val result = repository.login(email, password)
             _loginResult.value = result
             
             if (result.isSuccess) {
-                _isLoggedIn.value = true
+                result.getOrNull()?.user?.let { user ->
+                    _currentUser.value = user
+                    _isLoggedIn.value = true
+                    Timber.d("✓ Login successful for: ${user.email}, fullName: ${user.fullName}")
+                }
             } else {
                 _errorMessage.value = result.exceptionOrNull()?.message ?: "Login failed"
+                Timber.e("✗ Login failed: ${result.exceptionOrNull()?.message}")
             }
             
             _isLoading.value = false
@@ -101,19 +111,30 @@ class AuthViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+            Timber.d("Google login attempt for: $email")
             
             val result = repository.loginWithGoogle(idToken)
             _loginResult.value = result
             
             if (result.isSuccess) {
-                _isLoggedIn.value = true
-                Timber.d("Google login successful for: $email")
+                result.getOrNull()?.user?.let { user ->
+                    val updatedUser = user.copy(
+                        email = email,
+                        fullName = displayName,
+                        profilePic = photoUrl
+                    )
+                    _currentUser.value = updatedUser
+                    _isLoggedIn.value = true
+                    Timber.d("✓ Google login successful for: $email, fullName: $displayName")
+                    Timber.d("✓ User set to: ${_currentUser.value?.email}")
+                }
             } else {
                 _errorMessage.value = result.exceptionOrNull()?.message ?: "Google login failed"
-                Timber.e("Google login failed: ${result.exceptionOrNull()?.message}")
+                Timber.e("✗ Google login failed: ${result.exceptionOrNull()?.message}")
             }
             
             _isLoading.value = false
+            Timber.d("isLoggedIn now: ${_isLoggedIn.value}")
         }
     }
     
@@ -122,6 +143,7 @@ class AuthViewModel(private val context: Context) : ViewModel() {
             repository.logout()
             googleSignInHelper.signOut()
             _isLoggedIn.value = false
+            _currentUser.value = null
             _loginResult.value = null
             _errorMessage.value = null
             Timber.d("Logout successful")
@@ -131,7 +153,28 @@ class AuthViewModel(private val context: Context) : ViewModel() {
     private fun checkLoginStatus() {
         viewModelScope.launch {
             try {
-                _isLoggedIn.value = tokenManager.isLoggedIn()
+                if (tokenManager.isLoggedIn()) {
+                    // Load saved user data
+                    val userId = tokenManager.getUserId().first() ?: return@launch
+                    val email = tokenManager.getUserEmail().first() ?: return@launch
+                    val fullName = tokenManager.getUserName().first() ?: return@launch
+                    val role = tokenManager.getUserRole().first() ?: "CUSTOMER"
+                    val profilePic = tokenManager.getUserProfilePic().first()
+                    
+                    val user = com.ebike.mobile.data.models.User(
+                        id = userId.toLongOrNull() ?: return@launch,
+                        email = email,
+                        fullName = fullName,
+                        role = role,
+                        profilePic = profilePic
+                    )
+                    
+                    _currentUser.value = user
+                    _isLoggedIn.value = true
+                    Timber.d("Restored login session for: $email")
+                } else {
+                    Timber.d("No active login session")
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Error checking login status")
             }

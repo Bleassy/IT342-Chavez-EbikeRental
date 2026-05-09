@@ -12,8 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ArrowLeft, Zap, Clock, DollarSign, CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Bike } from "@/types";
-import { StripePaymentComponent } from "@/components/StripePayment";
-import { PaymentMethodSelector } from "@/components/PaymentMethodSelector";
+import { StripePaymentComponent } from "@/payment/StripePayment";
+import { PaymentMethodSelector } from "@/payment/PaymentMethodSelector";
 
 type BookingStage = "booking" | "paymentMethod" | "stripePayment";
 

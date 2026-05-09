@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchBikes } from "@/lib/api";
-import BikeCard from "@/components/BikeCard";
+import BikeCard from "@/bike/BikeCard";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2 } from "lucide-react";
 import { Bike, BikeStatus } from "@/types";
