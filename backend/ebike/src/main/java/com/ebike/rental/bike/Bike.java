@@ -40,7 +40,7 @@ public class Bike {
     @Column(nullable = false)
     private String color;
 
-    @Column(nullable = false)
+    @Column(name = "`year`", nullable = false)
     private Integer year;
 
     @Enumerated(EnumType.STRING)
