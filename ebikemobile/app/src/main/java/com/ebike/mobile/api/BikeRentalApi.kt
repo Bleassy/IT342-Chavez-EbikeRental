@@ -17,13 +17,13 @@ interface BikeRentalApi {
     suspend fun loginWithGoogle(@Body request: AuthGoogleRequest): Response<AuthApiResponse>
     
     // Users
-    @GET("users/profile")
+    @GET("profile")
     suspend fun getUserProfile(): Response<User>
     
-    @PUT("users/profile")
+    @PUT("profile")
     suspend fun updateProfile(@Body user: User): Response<User>
     
-    @POST("users/profile-pic")
+    @POST("profile/pic")
     suspend fun uploadProfilePic(@Body request: Map<String, String>): Response<User>
     
     // Bikes
@@ -48,13 +48,16 @@ interface BikeRentalApi {
     
     // Bookings
     @POST("bookings")
-    suspend fun createBooking(@Body booking: BookingDTO): Response<Booking>
+    suspend fun createBooking(@Body booking: BookingDTO): Response<ApiResponse<BookingDTO>>
     
     @GET("bookings")
     suspend fun getUserBookings(
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 20
     ): Response<Map<String, Any>>
+    
+    @GET("bookings/my/history")
+    suspend fun getUserRentalHistory(): Response<ApiResponse<List<Booking>>>
     
     @GET("bookings/{id}")
     suspend fun getBookingDetail(@Path("id") bookingId: Long): Response<Booking>

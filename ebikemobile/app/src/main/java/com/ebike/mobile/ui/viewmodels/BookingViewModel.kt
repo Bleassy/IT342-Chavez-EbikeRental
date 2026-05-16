@@ -40,14 +40,17 @@ class BookingViewModel(private val context: Context) : ViewModel() {
             _isLoading.value = true
             _errorMessage.value = null
             
+            Timber.d("🚴 Creating booking - bikeId: $bikeId, startTime: $startTime, endTime: $endTime")
+            
             val result = repository.createBooking(bikeId, startTime, endTime)
             _createBookingResult.value = result
             
             result.onSuccess { booking ->
                 _selectedBooking.value = booking
+                Timber.d("✅ Booking created successfully: ${booking.id}")
             }.onFailure { error ->
                 _errorMessage.value = error.message ?: "Failed to create booking"
-                Timber.e(error, "Create booking error")
+                Timber.e(error, "❌ Create booking error: ${error.message}")
             }
             
             _isLoading.value = false
@@ -66,6 +69,26 @@ class BookingViewModel(private val context: Context) : ViewModel() {
             }.onFailure { error ->
                 _errorMessage.value = error.message ?: "Failed to fetch bookings"
                 Timber.e(error, "Get user bookings error")
+            }
+            
+            _isLoading.value = false
+        }
+    }
+    
+    fun getRentalHistory() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            
+            Timber.d("📋 Loading rental history")
+            val result = repository.getUserRentalHistory()
+            
+            result.onSuccess { bookingList ->
+                _bookings.value = bookingList
+                Timber.d("✅ Rental history loaded: ${bookingList.size} bookings")
+            }.onFailure { error ->
+                _errorMessage.value = error.message ?: "Failed to fetch rental history"
+                Timber.e(error, "Get rental history error")
             }
             
             _isLoading.value = false

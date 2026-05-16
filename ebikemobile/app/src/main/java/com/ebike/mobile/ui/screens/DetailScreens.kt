@@ -1,6 +1,9 @@
 package com.ebike.mobile.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,15 +16,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.ebike.mobile.data.models.Booking
 import com.ebike.mobile.ui.viewmodels.AuthViewModel
 import com.ebike.mobile.ui.viewmodels.BikeViewModel
 import com.ebike.mobile.ui.viewmodels.BookingViewModel
+import com.ebike.mobile.utils.ImageUtils
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -693,12 +700,12 @@ fun BookingHistoryScreen(navController: NavHostController) {
     val cancelResult by viewModel.cancelBookingResult.collectAsState()
     
     LaunchedEffect(Unit) {
-        viewModel.getUserBookings()
+        viewModel.getRentalHistory()
     }
     
     LaunchedEffect(cancelResult) {
         cancelResult?.onSuccess {
-            viewModel.getUserBookings()
+            viewModel.getRentalHistory()
         }
     }
     
@@ -932,18 +939,25 @@ fun BookingCard(booking: Booking, viewModel: BookingViewModel) {
             }
             
             // Cancel Button (for active bookings)
-            if (booking.status in listOf("PENDING", "APPROVED", "ACTIVE")) {
+            if (booking.status in listOf("PENDING", "CONFIRMED", "APPROVED", "ACTIVE")) {
                 Button(
                     onClick = { showCancelDialog = true },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(36.dp),
+                        .height(44.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFEBEE)
+                        containerColor = Color(0xFFEF4444)
                     ),
-                    shape = RoundedCornerShape(6.dp)
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Cancel Booking", color = Color(0xFFC62828), fontSize = MaterialTheme.typography.labelSmall.fontSize)
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Cancel",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Cancel Booking", color = Color.White, fontSize = MaterialTheme.typography.labelMedium.fontSize, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                 }
             }
         }
@@ -1009,12 +1023,54 @@ fun ProfileScreen(
 ) {
     val context = LocalContext.current
     val currentUser by authViewModel.currentUser.collectAsState()
+    val isLoading by authViewModel.isLoading.collectAsState()
+    val errorMessage by authViewModel.errorMessage.collectAsState()
     val editMode = remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
+    var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var uploadingImage by remember { mutableStateOf(false) }
+    var uploadError by remember { mutableStateOf<String?>(null) }
+    
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            selectedImageUri = uri
+            Timber.d("Image selected: $uri")
+            
+            // Auto-upload the image
+            scope.launch {
+                uploadingImage = true
+                uploadError = null
+                try {
+                    val base64 = ImageUtils.compressImageToBase64(context, uri)
+                    if (base64 != null) {
+                        if (ImageUtils.isImageSizeAcceptable(base64)) {
+                            authViewModel.uploadProfilePicture(base64)
+                            Timber.d("Image uploaded successfully")
+                        } else {
+                            uploadError = "Image is too large (max 5MB)"
+                            Timber.e("Image size exceeded 5MB")
+                        }
+                    } else {
+                        uploadError = "Failed to compress image"
+                        Timber.e("Image compression failed")
+                    }
+                } catch (e: Exception) {
+                    uploadError = "Error: ${e.message}"
+                    Timber.e(e, "Image upload error")
+                } finally {
+                    uploadingImage = false
+                }
+            }
+        }
+    }
     
     // Update form fields when user data changes (real-time)
     LaunchedEffect(currentUser) {
@@ -1114,136 +1170,247 @@ fun ProfileScreen(
             }
         } else {
             // Logged in - show profile
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Profile Avatar
-            Surface(
+            Column(
                 modifier = Modifier
-                    .size(80.dp)
-                    .align(Alignment.CenterHorizontally),
-                shape = RoundedCornerShape(50),
-                color = Color(0xFF10B981),
-                shadowElevation = 4.dp
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Profile",
+                // Profile Avatar with Upload Button
+                Box(
                     modifier = Modifier
-                        .padding(12.dp)
-                        .fillMaxSize(),
-                    tint = Color.White
-                )
-            }
-            
-            if (!editMode.value) {
-                // View Mode
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
+                        .size(120.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .clip(RoundedCornerShape(50))
+                        .clickable { imagePickerLauncher.launch("image/*") }
+                        .background(Color(0xFFE0E0E0)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        ProfileField("Full Name", fullName.ifEmpty { "Not provided" })
-                        Divider()
-                        ProfileField("Email", email.ifEmpty { "Not provided" })
-                        Divider()
-                        ProfileField("Phone", phone.ifEmpty { "Not provided" })
-                        Divider()
-                        ProfileField("Address", address.ifEmpty { "Not provided" })
-                    }
-                }
-            } else {
-                // Edit Mode
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        TextField(
-                            value = fullName,
-                            onValueChange = { fullName = it },
-                            label = { Text("Full Name") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        TextField(
-                            value = email,
-                            onValueChange = { },
-                            label = { Text("Email") },
-                            enabled = false,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        TextField(
-                            value = phone,
-                            onValueChange = { phone = it },
-                            label = { Text("Phone") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        TextField(
-                            value = address,
-                            onValueChange = { address = it },
-                            label = { Text("Address") },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 3
-                        )
-                        
-                        Button(
-                            onClick = { editMode.value = false },
+                    if (currentUser?.profilePic != null) {
+                        // Show uploaded profile picture
+                        AsyncImage(
+                            model = currentUser?.profilePic,
+                            contentDescription = "Profile Picture",
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF10B981)
-                            ),
-                            shape = RoundedCornerShape(8.dp)
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(50)),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Show default avatar
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Profile",
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .fillMaxSize(),
+                            tint = Color(0xFF10B981)
+                        )
+                    }
+                    
+                    // Upload indicator
+                    if (uploadingImage) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = Color.Black.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(50)
                         ) {
-                            Text("Save Changes", color = Color.White)
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(40.dp),
+                                    color = Color.White,
+                                    strokeWidth = 3.dp
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Camera icon for upload hint
+                    if (!uploadingImage) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(36.dp),
+                            shape = RoundedCornerShape(50),
+                            color = Color(0xFF10B981),
+                            shadowElevation = 4.dp
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PhotoCamera,
+                                contentDescription = "Upload Photo",
+                                modifier = Modifier.padding(8.dp),
+                                tint = Color.White
+                            )
                         }
                     }
                 }
-            }
-            
-            // Logout Button
-            Button(
-                onClick = {
-                    authViewModel.logout()
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Dashboard.route) { inclusive = true }
+                
+                // Upload status messages
+                if (uploadError != null) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFFEBEE)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = "Error",
+                                tint = Color(0xFFC62828),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = uploadError ?: "",
+                                color = Color(0xFFC62828),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF44336)
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Logout,
-                    contentDescription = "Logout",
-                    modifier = Modifier
-                        .size(20.dp)
-                        .padding(end = 8.dp)
+                }
+                
+                if (errorMessage != null && errorMessage != uploadError) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFFEBEE)
+                    ) {
+                        Text(
+                            text = errorMessage!!,
+                            color = Color(0xFFC62828),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+                
+                Text(
+                    text = "Tap photo to upload profile picture",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
-                Text("Logout", color = Color.White)
+                
+                if (!editMode.value) {
+                    // View Mode
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White,
+                        shadowElevation = 2.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            ProfileField("Full Name", fullName.ifEmpty { "Not provided" })
+                            Divider()
+                            ProfileField("Email", email.ifEmpty { "Not provided" })
+                            Divider()
+                            ProfileField("Phone", phone.ifEmpty { "Not provided" })
+                            Divider()
+                            ProfileField("Address", address.ifEmpty { "Not provided" })
+                        }
+                    }
+                } else {
+                    // Edit Mode
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White,
+                        shadowElevation = 2.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            TextField(
+                                value = fullName,
+                                onValueChange = { fullName = it },
+                                label = { Text("Full Name") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            TextField(
+                                value = email,
+                                onValueChange = { },
+                                label = { Text("Email") },
+                                enabled = false,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            TextField(
+                                value = phone,
+                                onValueChange = { phone = it },
+                                label = { Text("Phone") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            TextField(
+                                value = address,
+                                onValueChange = { address = it },
+                                label = { Text("Address") },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 3
+                            )
+                            
+                            Button(
+                                onClick = { editMode.value = false },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF10B981)
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                enabled = !isLoading
+                            ) {
+                                if (isLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text("Save Changes", color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Logout Button
+                Button(
+                    onClick = {
+                        authViewModel.logout()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFF44336)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Logout,
+                        contentDescription = "Logout",
+                        modifier = Modifier
+                            .size(20.dp)
+                            .padding(end = 8.dp)
+                    )
+                    Text("Logout", color = Color.White)
+                }
             }
-        }
         }
     }
 }

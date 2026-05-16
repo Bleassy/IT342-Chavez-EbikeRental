@@ -1,12 +1,15 @@
 package com.ebike.rental.booking;
 
 import com.ebike.rental.dto.ApiResponse;
+import com.ebike.rental.user.JwtUserDetails;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,12 +23,45 @@ public class BookingController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<BookingDTO>> createBooking(
-            @RequestParam Long userId,
-            @RequestParam Long bikeId,
-            @RequestParam LocalDateTime startTime,
-            @RequestParam LocalDateTime endTime) {
+            @RequestBody(required = false) BookingDTO requestDto,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long bikeId,
+            @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime,
+            Authentication authentication) {
         try {
-            Booking booking = bookingService.createBooking(userId, bikeId, startTime, endTime);
+            // Extract values from either request body or query parameters
+            Long finalUserId = userId;
+            Long finalBikeId = bikeId;
+            LocalDateTime finalStartTime = null;
+            LocalDateTime finalEndTime = null;
+            
+            if (requestDto != null) {
+                // Mobile app sends request body - dates already are LocalDateTime
+                finalBikeId = requestDto.getBikeId();
+                finalStartTime = requestDto.getStartTime();
+                finalEndTime = requestDto.getEndTime();
+            } else if (startTime != null && endTime != null) {
+                // Web frontend sends query parameters - parse string dates to LocalDateTime
+                finalStartTime = LocalDateTime.parse(startTime, DateTimeFormatter.ISO_DATE_TIME);
+                finalEndTime = LocalDateTime.parse(endTime, DateTimeFormatter.ISO_DATE_TIME);
+            }
+            
+            // Extract userId from authenticated user if not provided
+            if (finalUserId == null) {
+                if (authentication != null && authentication.getDetails() instanceof JwtUserDetails) {
+                    JwtUserDetails userDetails = (JwtUserDetails) authentication.getDetails();
+                    finalUserId = userDetails.getUserId();
+                }
+            }
+            
+            if (finalUserId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ApiResponse<>(false, "User not authenticated"));
+            }
+            
+            Booking booking = bookingService.createBooking(finalUserId, finalBikeId, 
+                    finalStartTime, finalEndTime);
             if (booking != null) {
                 BookingDTO dto = new BookingDTO();
                 dto.setId(booking.getId());
@@ -45,6 +81,29 @@ public class BookingController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(false, "Failed to create booking: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/my/history")
+    public ResponseEntity<ApiResponse<List<BookingDTO>>> getMyRentalHistory(Authentication authentication) {
+        try {
+            // Extract userId from authenticated user
+            Long userId = null;
+            if (authentication != null && authentication.getDetails() instanceof JwtUserDetails) {
+                JwtUserDetails userDetails = (JwtUserDetails) authentication.getDetails();
+                userId = userDetails.getUserId();
+            }
+            
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ApiResponse<>(false, "User not authenticated"));
+            }
+            
+            List<BookingDTO> bookings = bookingService.getUserBookingHistory(userId);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Rental history retrieved successfully", bookings));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to retrieve rental history: " + e.getMessage()));
         }
     }
 
