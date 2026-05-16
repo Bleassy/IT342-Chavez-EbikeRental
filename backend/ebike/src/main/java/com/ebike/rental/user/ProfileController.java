@@ -88,6 +88,79 @@ public class ProfileController {
         }
     }
 
+    /**
+     * Upload or update user's profile picture (Base64 encoded).
+     * Accepts a JSON request with "profilePic" field containing Base64 encoded image.
+     */
+    @PostMapping("/pic")
+    public ResponseEntity<ApiResponse<UserDTO>> uploadProfilePicture(@RequestBody java.util.Map<String, String> request) {
+        try {
+            String email = getCurrentUserEmail();
+            if (email == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ApiResponse<>(false, "Not authenticated"));
+            }
+
+            String base64Image = request.get("profilePic");
+            if (base64Image == null || base64Image.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiResponse<>(false, "Profile picture data is required"));
+            }
+
+            // Validate Base64 format (basic check)
+            if (!isValidBase64(base64Image)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiResponse<>(false, "Invalid image format"));
+            }
+
+            Optional<UserDTO> existing = userService.getUserByEmail(email);
+            if (existing.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ApiResponse<>(false, "User not found"));
+            }
+
+            Long userId = existing.get().getId();
+            User userDetails = new User();
+            userDetails.setProfilePictureUrl(base64Image);
+
+            User updated = userService.updateUser(userId, userDetails);
+            if (updated != null) {
+                UserDTO dto = new UserDTO(
+                        updated.getId(),
+                        updated.getEmail(),
+                        updated.getFirstName(),
+                        updated.getLastName(),
+                        updated.getPhone(),
+                        updated.getAddress(),
+                        updated.getNickname(),
+                        updated.getProfilePictureUrl(),
+                        updated.getRole().toString(),
+                        updated.getIsActive(),
+                        updated.getCreatedAt()
+                );
+                return ResponseEntity.ok(new ApiResponse<>(true, "Profile picture uploaded successfully", dto));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ApiResponse<>(false, "User not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to upload profile picture: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Basic validation for Base64 encoded string
+     */
+    private boolean isValidBase64(String base64String) {
+        try {
+            return base64String != null && !base64String.isEmpty() && 
+                   base64String.matches("^[A-Za-z0-9+/=]*$");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private String getCurrentUserEmail() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {

@@ -66,7 +66,7 @@ public class BookingService {
     }
 
     public List<BookingDTO> getUserBookingHistory(Long userId) {
-        return bookingRepository.findByUserIdAndStatus(userId, Booking.BookingStatus.COMPLETED).stream()
+        return bookingRepository.findByUserId(userId).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }

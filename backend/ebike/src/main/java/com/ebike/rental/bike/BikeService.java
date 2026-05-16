@@ -2,6 +2,7 @@ package com.ebike.rental.bike;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,6 +14,13 @@ public class BikeService {
     private BikeRepository bikeRepository;
 
     public Bike createBike(Bike bike) {
+        // Set default prices if not provided
+        if (bike.getPricePerHour() == null || bike.getPricePerHour().compareTo(BigDecimal.ZERO) <= 0) {
+            bike.setPricePerHour(new BigDecimal("100"));  // ₹100 per hour default
+        }
+        if (bike.getPricePerDay() == null || bike.getPricePerDay().compareTo(BigDecimal.ZERO) <= 0) {
+            bike.setPricePerDay(new BigDecimal("500"));   // ₹500 per day default
+        }
         return bikeRepository.save(bike);
     }
 

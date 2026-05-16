@@ -7,6 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
 
 private val Context.dataStore by preferencesDataStore(name = "ebike_preferences")
 
@@ -27,6 +28,9 @@ class TokenManager(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[ACCESS_TOKEN] = token
         }
+        // Force read to verify persistence
+        val saved = context.dataStore.data.first()[ACCESS_TOKEN]
+        Timber.d("🔐 Token saved verification: ${if (saved == token) "✅ CONFIRMED" else "❌ FAILED"}")
     }
     
     suspend fun saveUserData(

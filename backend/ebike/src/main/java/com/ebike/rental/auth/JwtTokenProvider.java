@@ -6,6 +6,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +16,9 @@ import javax.crypto.SecretKey;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret:ebike_rental_system_secure_key_2024_very_long_secret_key_for_production}")
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
+
+    @Value("${jwt.secret:ebike_rental_system_secure_key_2024_very_long_secret_key_for_production_environment}")
     private String jwtSecret;
 
     @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds

@@ -32,6 +32,8 @@ class AuthRepository(private val context: Context) {
                         
                         // Save token and user data
                         tokenManager.saveToken(authData.token)
+                        Timber.d("✅ Token saved for user: ${authData.email}")
+                        
                         tokenManager.saveUserData(
                             authData.id,
                             authData.email,
@@ -39,6 +41,8 @@ class AuthRepository(private val context: Context) {
                             authData.role,
                             null
                         )
+                        Timber.d("✅ User data saved: ${authData.email}")
+                        
                         Result.success(loginResponse)
                     } else {
                         Result.failure(Exception(apiResponse.message ?: "Login failed"))
@@ -152,5 +156,29 @@ class AuthRepository(private val context: Context) {
     suspend fun logout() {
         tokenManager.clearAll()
         RetrofitClient.resetClient()
+    }
+    
+    suspend fun uploadProfilePicture(base64Image: String): Result<User> {
+        return try {
+            Timber.d("Uploading profile picture...")
+            val request = mapOf(
+                "profilePic" to base64Image
+            )
+            val response = api.uploadProfilePic(request)
+            
+            if (response.isSuccessful) {
+                response.body()?.let { user ->
+                    Timber.d("✅ Profile picture uploaded successfully")
+                    Result.success(user)
+                } ?: Result.failure(Exception("Empty response body"))
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Timber.e("Upload error: $errorBody")
+                Result.failure(Exception(errorBody ?: "Upload failed"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Profile picture upload error")
+            Result.failure(e)
+        }
     }
 }

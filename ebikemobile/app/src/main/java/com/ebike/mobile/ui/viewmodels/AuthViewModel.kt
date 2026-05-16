@@ -184,4 +184,33 @@ class AuthViewModel(private val context: Context) : ViewModel() {
     fun clearError() {
         _errorMessage.value = null
     }
+    
+    fun uploadProfilePicture(base64Image: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            Timber.d("Uploading profile picture...")
+            
+            val result = repository.uploadProfilePicture(base64Image)
+            
+            if (result.isSuccess) {
+                result.getOrNull()?.let { user ->
+                    _currentUser.value = user
+                    tokenManager.saveUserData(
+                        user.id,
+                        user.email,
+                        user.fullName,
+                        user.role,
+                        user.profilePic
+                    )
+                    Timber.d("✅ Profile picture updated successfully")
+                }
+            } else {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Upload failed"
+                Timber.e("❌ Profile picture upload failed: ${result.exceptionOrNull()?.message}")
+            }
+            
+            _isLoading.value = false
+        }
+    }
 }

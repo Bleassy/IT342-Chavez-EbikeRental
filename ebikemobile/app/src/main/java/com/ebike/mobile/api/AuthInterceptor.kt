@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
+import timber.log.Timber
 
 class AuthInterceptor(private val context: Context) : Interceptor {
     
@@ -15,22 +16,39 @@ class AuthInterceptor(private val context: Context) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
         
-        // Get token synchronously for the interceptor
-        val token = runBlocking {
-            tokenManager.getAccessToken().first()
+        try {
+            // Get token synchronously for the interceptor
+            val token = runBlocking {
+                try {
+                    val t = tokenManager.getAccessToken().first()
+                    Timber.d("🔑 Token retrieved: ${if (t.isNullOrEmpty()) "EMPTY/NULL" else "OK (${t?.length} chars)"}") 
+                    t
+                } catch (e: Exception) {
+                    Timber.e(e, "❌ Error getting token from TokenManager")
+                    null
+                }
+            }
+            
+            // Build new request with authorization header
+            val requestBuilder = originalRequest.newBuilder()
+            
+            if (token != null && token.isNotEmpty()) {
+                requestBuilder.addHeader("Authorization", "Bearer $token")
+                Timber.d("✅ Authorization header added for: ${originalRequest.url.encodedPath}")
+            } else {
+                Timber.e("❌ NO TOKEN FOUND - Request to: ${originalRequest.url.encodedPath}")
+                Timber.e("🔍 Token status: ${if (token == null) "NULL" else "EMPTY"}")
+            }
+            
+            requestBuilder.addHeader("Content-Type", "application/json")
+            
+            val newRequest = requestBuilder.build()
+            Timber.d("📤 Making ${originalRequest.method} request to: ${originalRequest.url.encodedPath}")
+            
+            return chain.proceed(newRequest)
+        } catch (e: Exception) {
+            Timber.e(e, "❌ AuthInterceptor exception")
+            throw e
         }
-        
-        // Build new request with authorization header
-        val requestBuilder = originalRequest.newBuilder()
-        
-        token?.let {
-            requestBuilder.addHeader("Authorization", "Bearer $it")
-        }
-        
-        requestBuilder.addHeader("Content-Type", "application/json")
-        
-        val newRequest = requestBuilder.build()
-        
-        return chain.proceed(newRequest)
     }
 }

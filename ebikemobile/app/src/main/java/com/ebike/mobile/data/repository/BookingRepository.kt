@@ -5,6 +5,7 @@ import com.ebike.mobile.api.BikeRentalApi
 import com.ebike.mobile.api.RetrofitClient
 import com.ebike.mobile.data.models.Booking
 import com.ebike.mobile.data.models.BookingDTO
+import kotlinx.coroutines.flow.first
 import timber.log.Timber
 
 class BookingRepository(private val context: Context) {
@@ -17,6 +18,8 @@ class BookingRepository(private val context: Context) {
         endTime: String
     ): Result<Booking> {
         return try {
+            Timber.d("📦 Creating booking - bikeId: $bikeId, startTime: $startTime, endTime: $endTime")
+            
             val booking = BookingDTO(
                 id = 0,
                 userId = 0,
@@ -28,14 +31,56 @@ class BookingRepository(private val context: Context) {
             val response = api.createBooking(booking)
             
             if (response.isSuccessful) {
-                response.body()?.let {
-                    Result.success(it)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success && apiResponse.data != null) {
+                        val dto = apiResponse.data
+                        // Convert BookingDTO to Booking
+                        val createdBooking = Booking(
+                            id = dto.id,
+                            userId = dto.userId,
+                            bikeId = dto.bikeId,
+                            startTime = dto.startTime,
+                            endTime = dto.endTime,
+                            status = dto.status,
+                            totalCost = dto.totalPrice ?: dto.totalCost,  // Use totalPrice from backend
+                            cancellationReason = dto.cancellationReason,
+                            createdAt = dto.createdAt,
+                            updatedAt = dto.updatedAt
+                        )
+                        Timber.d("✅ Booking created successfully - id: ${createdBooking.id}")
+                        Result.success(createdBooking)
+                    } else {
+                        Result.failure(Exception(apiResponse.message))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 Result.failure(Exception(response.errorBody()?.string() ?: "Booking creation failed"))
             }
         } catch (e: Exception) {
             Timber.e(e, "Create booking error")
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getUserRentalHistory(): Result<List<Booking>> {
+        return try {
+            Timber.d("📋 Fetching rental history")
+            val response = api.getUserRentalHistory()
+            
+            if (response.isSuccessful) {
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success && apiResponse.data != null) {
+                        Timber.d("✅ Rental history fetched - ${apiResponse.data.size} bookings")
+                        Result.success(apiResponse.data)
+                    } else {
+                        Result.failure(Exception(apiResponse.message))
+                    }
+                } ?: Result.failure(Exception("Empty response body"))
+            } else {
+                Result.failure(Exception(response.errorBody()?.string() ?: "Failed to fetch rental history"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Get rental history error")
             Result.failure(e)
         }
     }

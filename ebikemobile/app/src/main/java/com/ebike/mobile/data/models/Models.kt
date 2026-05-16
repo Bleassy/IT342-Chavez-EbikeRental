@@ -72,7 +72,8 @@ data class BookingDTO(
     val startTime: String,
     val endTime: String? = null,
     val status: String,
-    val totalCost: Double? = null,
+    val totalPrice: Double? = null,
+    val totalCost: Double? = null,  // For compatibility
     val cancellationReason: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null

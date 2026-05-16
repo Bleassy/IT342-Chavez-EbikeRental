@@ -117,6 +117,15 @@ dependencies {
     // Coil for image loading
     implementation 'io.coil-kt:coil-compose:2.5.0'
     
+    // Image Compression & File Handling
+    implementation 'id.zelory:compressor:3.0.1'
+    
+    // File Picker for image selection
+    implementation 'androidx.activity:activity:1.8.1'
+    
+    // Permissions handling
+    implementation 'com.google.accompanist:accompanist-permissions:0.34.0'
+    
     // JSON parsing
     implementation 'com.google.code.gson:gson:2.10.1'
     
