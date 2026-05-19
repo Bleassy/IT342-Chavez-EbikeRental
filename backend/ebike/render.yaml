@@ -3,7 +3,7 @@ services:
     name: ebike-backend
     runtime: java
     rootDir: .
-    buildCommand: ./mvnw clean package -DskipTests
+    buildCommand: chmod +x mvnw && ./mvnw clean package -DskipTests
     startCommand: java -Dserver.port=$PORT -jar target/ebike-0.0.1-SNAPSHOT.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
