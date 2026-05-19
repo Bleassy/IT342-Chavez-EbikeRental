@@ -181,4 +181,46 @@ class AuthRepository(private val context: Context) {
             Result.failure(e)
         }
     }
+
+    suspend fun updateProfile(user: User): Result<User> {
+        return try {
+            Timber.d("Updating profile for: ${user.email}")
+            val response = api.updateProfile(user)
+
+            if (response.isSuccessful) {
+                response.body()?.let { updatedUser ->
+                    Timber.d("✅ Profile updated successfully: ${updatedUser.email}")
+                    Result.success(updatedUser)
+                } ?: Result.failure(Exception("Empty response body"))
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Timber.e("Profile update error: $errorBody")
+                Result.failure(Exception(errorBody ?: "Profile update failed"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Profile update error")
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getProfile(): Result<User> {
+        return try {
+            Timber.d("Fetching user profile...")
+            val response = api.getUserProfile()
+            
+            if (response.isSuccessful) {
+                response.body()?.let { user ->
+                    Timber.d("✅ Profile fetched successfully: ${user.email}")
+                    Result.success(user)
+                } ?: Result.failure(Exception("Empty response body"))
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Timber.e("Profile fetch error: $errorBody")
+                Result.failure(Exception(errorBody ?: "Failed to fetch profile"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Profile fetch error")
+            Result.failure(e)
+        }
+    }
 }

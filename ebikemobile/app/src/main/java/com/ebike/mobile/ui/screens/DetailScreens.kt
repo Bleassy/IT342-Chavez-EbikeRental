@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.ebike.mobile.api.RetrofitClient
 import com.ebike.mobile.data.models.Booking
 import com.ebike.mobile.ui.viewmodels.AuthViewModel
 import com.ebike.mobile.ui.viewmodels.BikeViewModel
@@ -114,6 +115,7 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
             }
         } else if (selectedBike != null) {
             val bike = selectedBike!!
+            val bikeImage = resolveBikeImageUrl(context, bike.imageUrl ?: bike.image)
             
             Column(
                 modifier = Modifier
@@ -133,12 +135,21 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.DirectionsBike,
-                            contentDescription = "Bike",
-                            modifier = Modifier.size(100.dp),
-                            tint = Color(0xFF10B981)
-                        )
+                        if (!bikeImage.isNullOrBlank()) {
+                            AsyncImage(
+                                model = bikeImage,
+                                contentDescription = bike.name ?: "Bike",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.DirectionsBike,
+                                contentDescription = "Bike",
+                                modifier = Modifier.size(100.dp),
+                                tint = Color(0xFF10B981)
+                            )
+                        }
                     }
                 }
                 
@@ -336,9 +347,21 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
     
     // Booking Date/Time Picker Dialog
     if (showDateTimePicker && selectedBike != null) {
+        val bikeForBooking = selectedBike!!
+        val bikeDisplayName = bikeForBooking.name
+            ?: bikeForBooking.bikeCode
+            ?: bikeForBooking.model
+            ?: "Bike #${bikeForBooking.id}"
+        val hourlyRate = when {
+            bikeForBooking.pricePerHour > 0 -> bikeForBooking.pricePerHour
+            bikeForBooking.hourlyRate > 0 -> bikeForBooking.hourlyRate
+            else -> 20.0
+        }
+        val estimatedTotal = hours * hourlyRate
+
         AlertDialog(
             onDismissRequest = { showDateTimePicker = false },
-            title = { Text("Book ${selectedBike!!.name}") },
+            title = { Text("Book $bikeDisplayName") },
             text = {
                 Column(
                     modifier = Modifier
@@ -362,7 +385,7 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                     }
                     
                     Text(
-                        text = "Hourly Rate: ₹${selectedBike!!.hourlyRate}/hour",
+                        text = "Hourly Rate: ₹${String.format("%.2f", hourlyRate)}/hour",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                     )
@@ -386,10 +409,14 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                                 .height(48.dp),
                             shape = RoundedCornerShape(6.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFE0E0E0)
+                                containerColor = Color(0xFF10B981)
                             )
                         ) {
-                            Text("-", color = Color.Black, fontSize = MaterialTheme.typography.titleMedium.fontSize)
+                            Icon(
+                                imageVector = Icons.Default.Remove,
+                                contentDescription = "Decrease duration",
+                                tint = Color.White
+                            )
                         }
                         
                         Text(
@@ -406,15 +433,19 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                                 .height(48.dp),
                             shape = RoundedCornerShape(6.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFE0E0E0)
+                                containerColor = Color(0xFF10B981)
                             )
                         ) {
-                            Text("+", color = Color.Black, fontSize = MaterialTheme.typography.titleMedium.fontSize)
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Increase duration",
+                                tint = Color.White
+                            )
                         }
                     }
                     
                     Text(
-                        text = "Estimated Total: ₹${hours * selectedBike!!.hourlyRate}",
+                        text = "Estimated Total: ₹${String.format("%.2f", estimatedTotal)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF10B981),
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
@@ -424,7 +455,7 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
             confirmButton = {
                 Button(
                     onClick = {
-                        if (selectedBike != null && hours > 0) {
+                        if (hours > 0) {
                             scope.launch {
                                 // Generate current timestamp for start time
                                 val now = java.time.LocalDateTime.now()
@@ -433,7 +464,7 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                                 val endTime = now.plusHours(hours.toLong()).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
                                 
                                 bookingViewModel.createBooking(
-                                    bikeId = selectedBike!!.id,
+                                    bikeId = bikeForBooking.id,
                                     startTime = startTime,
                                     endTime = endTime
                                 )
@@ -563,13 +594,13 @@ fun BookingConfirmationScreen(navController: NavHostController, bookingId: Long)
                         )
                         
                         Text(
-                            text = "Start: ${booking.startTime}",
+                            text = "Start: ${formatDateTime(booking.startTime)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Gray
                         )
                         
                         Text(
-                            text = "End: ${booking.endTime ?: "Not specified"}",
+                            text = "End: ${if (!booking.endTime.isNullOrEmpty()) formatDateTime(booking.endTime!!) else "Not specified"}",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Gray
                         )
@@ -586,7 +617,7 @@ fun BookingConfirmationScreen(navController: NavHostController, bookingId: Long)
                                 color = Color.Gray
                             )
                             Text(
-                                text = "₹${booking.totalCost ?: "0.00"}",
+                                text = "₹${calculateCost(booking)}",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = Color(0xFF10B981),
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
@@ -880,7 +911,7 @@ fun BookingCard(booking: Booking, viewModel: BookingViewModel) {
                         color = Color.Gray
                     )
                     Text(
-                        text = booking.startTime,
+                        text = formatDateTime(booking.startTime),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -892,7 +923,7 @@ fun BookingCard(booking: Booking, viewModel: BookingViewModel) {
                         color = Color.Gray
                     )
                     Text(
-                        text = booking.endTime ?: "Ongoing",
+                        text = booking.endTime?.let { formatDateTime(it) } ?: "Ongoing",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -908,7 +939,7 @@ fun BookingCard(booking: Booking, viewModel: BookingViewModel) {
                     color = Color.Gray
                 )
                 Text(
-                    text = "₹${booking.totalCost ?: "0.00"}",
+                    text = "₹${calculateCost(booking)}",
                     style = MaterialTheme.typography.titleSmall,
                     color = Color(0xFF10B981),
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
@@ -1057,14 +1088,17 @@ fun ProfileScreen(
                         } else {
                             uploadError = "Image is too large (max 5MB)"
                             Timber.e("Image size exceeded 5MB")
+                            selectedImageUri = null
                         }
                     } else {
                         uploadError = "Failed to compress image"
                         Timber.e("Image compression failed")
+                        selectedImageUri = null
                     }
                 } catch (e: Exception) {
                     uploadError = "Error: ${e.message}"
                     Timber.e(e, "Image upload error")
+                    selectedImageUri = null
                 } finally {
                     uploadingImage = false
                 }
@@ -1075,18 +1109,14 @@ fun ProfileScreen(
     // Update form fields when user data changes (real-time)
     LaunchedEffect(currentUser) {
         currentUser?.let { user ->
-            fullName = user.fullName
-            email = user.email
-            phone = user.phone ?: ""
-            address = user.address ?: ""
+            fullName = user.fullName.ifBlank { fullName }
+            email = user.email.ifBlank { email }
+            phone = user.phone?.ifBlank { phone } ?: phone
+            address = user.address?.ifBlank { address } ?: address
             Timber.d("✅ Profile synced: ${user.email} (${user.fullName})")
             Timber.d("   Phone: $phone, Address: $address")
         } ?: run {
             Timber.w("⚠️ currentUser is NULL - not logged in")
-            fullName = ""
-            email = ""
-            phone = ""
-            address = ""
         }
     }
     
@@ -1186,8 +1216,18 @@ fun ProfileScreen(
                         .background(Color(0xFFE0E0E0)),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (currentUser?.profilePic != null) {
-                        // Show uploaded profile picture
+                    if (selectedImageUri != null) {
+                        // Show selected image immediately (before upload completes)
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Profile Picture",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(50)),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else if (!currentUser?.profilePic.isNullOrEmpty()) {
+                        // Show uploaded profile picture from backend
                         AsyncImage(
                             model = currentUser?.profilePic,
                             contentDescription = "Profile Picture",
@@ -1275,6 +1315,33 @@ fun ProfileScreen(
                     }
                 }
                 
+                if (uploadingImage) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFE8F7F1)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color(0xFF10B981),
+                                strokeWidth = 2.dp
+                            )
+                            Text(
+                                text = "Uploading profile picture... (may take 30-120 seconds for large images)",
+                                color = Color(0xFF10B981),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+                
                 if (errorMessage != null && errorMessage != uploadError) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -1291,9 +1358,9 @@ fun ProfileScreen(
                 }
                 
                 Text(
-                    text = "Tap photo to upload profile picture",
+                    text = if (uploadingImage) "Upload in progress..." else "Tap photo to upload profile picture",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray,
+                    color = if (uploadingImage) Color(0xFF10B981) else Color.Gray,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
                 
@@ -1309,13 +1376,13 @@ fun ProfileScreen(
                             modifier = Modifier.padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            ProfileField("Full Name", fullName.ifEmpty { "Not provided" })
+                            ProfileField("Full Name", fullName.ifBlank { "Not provided" })
                             Divider()
-                            ProfileField("Email", email.ifEmpty { "Not provided" })
+                            ProfileField("Email", email.ifBlank { "Not provided" })
                             Divider()
-                            ProfileField("Phone", phone.ifEmpty { "Not provided" })
+                            ProfileField("Phone", phone.ifBlank { "Not provided" })
                             Divider()
-                            ProfileField("Address", address.ifEmpty { "Not provided" })
+                            ProfileField("Address", address.ifBlank { "Not provided" })
                         }
                     }
                 } else {
@@ -1361,12 +1428,24 @@ fun ProfileScreen(
                             )
                             
                             Button(
-                                onClick = { editMode.value = false },
+                                onClick = {
+                                    authViewModel.updateProfile(
+                                        fullName = fullName,
+                                        phone = phone,
+                                        address = address,
+                                        onComplete = { success ->
+                                            if (success) {
+                                                editMode.value = false
+                                                authViewModel.refreshUserProfile()
+                                            }
+                                        }
+                                    )
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF10B981)
+                                    containerColor = Color(0xFF059669)
                                 ),
                                 shape = RoundedCornerShape(8.dp),
                                 enabled = !isLoading
@@ -1429,4 +1508,75 @@ fun ProfileField(label: String, value: String) {
             color = Color.Black
         )
     }
+}
+
+/**
+ * Format date-time string for display
+ * Handles both ISO_DATE_TIME format and already formatted strings
+ */
+fun formatDateTime(dateTimeString: String?): String {
+    if (dateTimeString.isNullOrEmpty()) return "N/A"
+    return try {
+        // Try parsing ISO format (2026-05-17T10:30:00)
+        val dateTime = java.time.LocalDateTime.parse(dateTimeString)
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy h:mm a")
+        dateTime.format(formatter)
+    } catch (e: Exception) {
+        // If parsing fails, return original string
+        dateTimeString
+    }
+}
+
+/**
+ * Calculate total cost based on booking duration
+ * Returns the totalCost if available, otherwise calculates from start/end time
+ * Assumes ₹20 per hour if duration can be calculated
+ */
+fun calculateCost(booking: com.ebike.mobile.data.models.Booking): String {
+    // If totalCost is available and not zero, use it
+    if (booking.totalCost != null && booking.totalCost!! > 0) {
+        return String.format("%.2f", booking.totalCost)
+    }
+    
+    // Calculate cost from duration (₹20 per hour)
+    return try {
+        if (booking.startTime.isNullOrEmpty() || booking.endTime.isNullOrEmpty()) {
+            "0.00" // Ongoing booking
+        } else {
+            val startTime = java.time.LocalDateTime.parse(booking.startTime ?: "")
+            val endTime = java.time.LocalDateTime.parse(booking.endTime ?: "")
+            val duration = java.time.Duration.between(startTime, endTime)
+            val hours = kotlin.math.max(1.0, duration.toMinutes() / 60.0) // Minimum 1 hour
+            val cost = hours * 20.0 // ₹20 per hour
+            String.format("%.2f", cost)
+        }
+    } catch (e: Exception) {
+        Timber.e(e, "Error calculating cost")
+        "0.00" // Default if parsing fails
+    }
+}
+
+private fun resolveBikeImageUrl(context: android.content.Context, rawImage: String?): String? {
+    if (rawImage.isNullOrBlank()) return null
+    if (rawImage.startsWith("http://") || rawImage.startsWith("https://") || rawImage.startsWith("data:")) return rawImage
+    if (looksLikeBase64Image(rawImage)) return "data:image/jpeg;base64,$rawImage"
+
+    val baseUrl = RetrofitClient.getBaseUrl(context)
+    val serverBase = if (baseUrl.endsWith("/api/")) {
+        baseUrl.removeSuffix("api/")
+    } else if (baseUrl.endsWith("/api")) {
+        baseUrl.removeSuffix("api")
+    } else {
+        baseUrl
+    }
+
+    val normalizedPath = if (rawImage.startsWith('/')) rawImage.substring(1) else rawImage
+    return serverBase.trimEnd('/') + "/" + normalizedPath
+}
+
+private fun looksLikeBase64Image(value: String): Boolean {
+    if (value.startsWith("/9j/") || value.startsWith("iVBOR") || value.startsWith("R0lGOD")) {
+        return true
+    }
+    return value.length > 100 && value.matches(Regex("^[A-Za-z0-9+/=\\s]+$"))
 }

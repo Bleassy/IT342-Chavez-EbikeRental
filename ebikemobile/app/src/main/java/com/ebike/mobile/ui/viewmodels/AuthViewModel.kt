@@ -37,6 +37,30 @@ class AuthViewModel(private val context: Context) : ViewModel() {
     
     private val _currentUser = MutableStateFlow<com.ebike.mobile.data.models.User?>(null)
     val currentUser: StateFlow<com.ebike.mobile.data.models.User?> = _currentUser
+
+    private fun mergeUserData(
+        existing: com.ebike.mobile.data.models.User?,
+        incoming: com.ebike.mobile.data.models.User
+    ): com.ebike.mobile.data.models.User {
+        val incomingFullName = runCatching { incoming.fullName }.getOrNull()
+        val incomingEmail = runCatching { incoming.email }.getOrNull()
+        val incomingRole = runCatching { incoming.role }.getOrNull()
+
+        return incoming.copy(
+            fullName = incomingFullName?.takeUnless { it.isBlank() }
+                ?: existing?.fullName
+                ?: "",
+            email = incomingEmail?.takeUnless { it.isBlank() }
+                ?: existing?.email
+                ?: "",
+            phone = incoming.phone ?: existing?.phone,
+            address = incoming.address ?: existing?.address,
+            profilePic = incoming.profilePic ?: existing?.profilePic,
+            role = incomingRole?.takeUnless { it.isBlank() }
+                ?: existing?.role
+                ?: "CUSTOMER"
+        )
+    }
     
     init {
         checkLoginStatus()
@@ -160,13 +184,17 @@ class AuthViewModel(private val context: Context) : ViewModel() {
                     val fullName = tokenManager.getUserName().first() ?: return@launch
                     val role = tokenManager.getUserRole().first() ?: "CUSTOMER"
                     val profilePic = tokenManager.getUserProfilePic().first()
+                    val phone = tokenManager.getUserPhone().first()
+                    val address = tokenManager.getUserAddress().first()
                     
                     val user = com.ebike.mobile.data.models.User(
                         id = userId.toLongOrNull() ?: return@launch,
                         email = email,
                         fullName = fullName,
                         role = role,
-                        profilePic = profilePic
+                        profilePic = profilePic,
+                        phone = phone,
+                        address = address
                     )
                     
                     _currentUser.value = user
@@ -195,21 +223,107 @@ class AuthViewModel(private val context: Context) : ViewModel() {
             
             if (result.isSuccess) {
                 result.getOrNull()?.let { user ->
-                    _currentUser.value = user
+                    val mergedUser = mergeUserData(_currentUser.value, user)
+                    _currentUser.value = mergedUser
                     tokenManager.saveUserData(
-                        user.id,
-                        user.email,
-                        user.fullName,
-                        user.role,
-                        user.profilePic
+                        mergedUser.id,
+                        mergedUser.email,
+                        mergedUser.fullName,
+                        mergedUser.role,
+                        mergedUser.profilePic,
+                        mergedUser.phone,
+                        mergedUser.address
                     )
                     Timber.d("✅ Profile picture updated successfully")
+                    refreshUserProfile()
                 }
             } else {
                 _errorMessage.value = result.exceptionOrNull()?.message ?: "Upload failed"
                 Timber.e("❌ Profile picture upload failed: ${result.exceptionOrNull()?.message}")
             }
             
+            _isLoading.value = false
+        }
+    }
+    
+    fun refreshUserProfile() {
+        viewModelScope.launch {
+            Timber.d("Refreshing user profile...")
+            try {
+                val result = repository.getProfile()
+                if (result.isSuccess) {
+                    result.getOrNull()?.let { user ->
+                        val mergedUser = mergeUserData(_currentUser.value, user)
+                        _currentUser.value = mergedUser
+                        tokenManager.saveUserData(
+                            mergedUser.id,
+                            mergedUser.email,
+                            mergedUser.fullName,
+                            mergedUser.role,
+                            mergedUser.profilePic,
+                            mergedUser.phone,
+                            mergedUser.address
+                        )
+                        Timber.d("✅ User profile refreshed successfully")
+                    }
+                } else {
+                    Timber.w("Failed to refresh profile: ${result.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error refreshing profile")
+            }
+        }
+    }
+
+    fun updateProfile(
+        fullName: String,
+        phone: String,
+        address: String,
+        onComplete: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            val existingUser = _currentUser.value
+            if (existingUser == null) {
+                _errorMessage.value = "No profile loaded"
+                _isLoading.value = false
+                onComplete(false)
+                return@launch
+            }
+
+            val requestUser = existingUser.copy(
+                fullName = fullName.ifBlank { existingUser.fullName },
+                phone = phone.ifBlank { null },
+                address = address.ifBlank { null }
+            )
+
+            val result = repository.updateProfile(requestUser)
+            if (result.isSuccess) {
+                result.getOrNull()?.let { updatedUser ->
+                    val mergedUser = mergeUserData(existingUser, updatedUser)
+                    _currentUser.value = mergedUser
+                    tokenManager.saveUserData(
+                        mergedUser.id,
+                        mergedUser.email,
+                        mergedUser.fullName,
+                        mergedUser.role,
+                        mergedUser.profilePic,
+                        mergedUser.phone,
+                        mergedUser.address
+                    )
+                    Timber.d("✅ Profile updated in ViewModel")
+                    onComplete(true)
+                } ?: run {
+                    _errorMessage.value = "Empty profile update response"
+                    onComplete(false)
+                }
+            } else {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Profile update failed"
+                onComplete(false)
+            }
+
             _isLoading.value = false
         }
     }
