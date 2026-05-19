@@ -16,10 +16,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.ebike.rental.auth.JwtAuthenticationFilter;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -36,31 +34,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(resolveAllowedOrigins());
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8081", "http://localhost:8080", "http://localhost:5173"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
-    }
-
-    private List<String> resolveAllowedOrigins() {
-        String configuredOrigins = System.getenv("APP_CORS_ALLOWED_ORIGINS");
-        List<String> origins = new ArrayList<>();
-
-        if (configuredOrigins != null && !configuredOrigins.isBlank()) {
-            origins.addAll(Arrays.stream(configuredOrigins.split(","))
-                    .map(String::trim)
-                    .filter(origin -> !origin.isBlank())
-                    .collect(Collectors.toList()));
-        }
-
-        if (origins.isEmpty()) {
-            origins.addAll(Arrays.asList("http://localhost:8081", "http://localhost:8080", "http://localhost:5173"));
-        }
-
-        return origins;
     }
 
     @Bean
