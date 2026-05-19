@@ -57,19 +57,19 @@ interface BikeRentalApi {
     ): Response<Map<String, Any>>
     
     @GET("bookings/my/history")
-    suspend fun getUserRentalHistory(): Response<ApiResponse<List<Booking>>>
+    suspend fun getUserRentalHistory(): Response<ApiResponse<List<BookingDTO>>>
     
     @GET("bookings/{id}")
-    suspend fun getBookingDetail(@Path("id") bookingId: Long): Response<Booking>
+    suspend fun getBookingDetail(@Path("id") bookingId: Long): Response<ApiResponse<BookingDTO>>
     
     @PUT("bookings/{id}/cancel")
     suspend fun cancelBooking(
         @Path("id") bookingId: Long,
         @Body request: Map<String, String>
-    ): Response<Booking>
+    ): Response<ApiResponse<String>>
     
     @PUT("bookings/{id}/complete")
-    suspend fun completeBooking(@Path("id") bookingId: Long): Response<Booking>
+    suspend fun completeBooking(@Path("id") bookingId: Long): Response<ApiResponse<String>>
     
     // Admin endpoints
     @GET("admin/bookings")

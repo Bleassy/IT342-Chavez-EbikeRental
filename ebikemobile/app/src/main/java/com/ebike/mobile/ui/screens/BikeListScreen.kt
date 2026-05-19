@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import com.ebike.mobile.api.RetrofitClient
 import com.ebike.mobile.data.models.Bike
 import com.ebike.mobile.ui.viewmodels.BikeViewModel
 
@@ -129,6 +133,9 @@ fun BikeListScreen(navController: NavHostController) {
 
 @Composable
 fun BikeCard(bike: Bike, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val bikeImage = resolveBikeImageUrl(context, bike)
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -145,9 +152,39 @@ fun BikeCard(bike: Bike, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Surface(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+                color = Color(0xFFE8F7F1)
+            ) {
+                if (!bikeImage.isNullOrBlank()) {
+                    AsyncImage(
+                        model = bikeImage,
+                        contentDescription = bike.name ?: "Bike",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DirectionsBike,
+                            contentDescription = "Bike",
+                            tint = Color(0xFF10B981),
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = bike.name ?: "Unknown Bike",
+                    text = bike.name ?: bike.bikeCode ?: "Bike #${bike.id}",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Black
                 )
@@ -181,7 +218,7 @@ fun BikeCard(bike: Bike, onClick: () -> Unit) {
                         )
                     }
                     Text(
-                        text = "₹${bike.hourlyRate}/hr",
+                        text = "₹${String.format("%.2f", if (bike.pricePerHour > 0) bike.pricePerHour else bike.hourlyRate)}/hr",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color(0xFF10B981),
                         modifier = Modifier.padding(top = 4.dp)
@@ -195,4 +232,30 @@ fun BikeCard(bike: Bike, onClick: () -> Unit) {
             )
         }
     }
+}
+
+private fun resolveBikeImageUrl(context: android.content.Context, bike: Bike): String? {
+    val raw = bike.imageUrl ?: bike.image
+    if (raw.isNullOrBlank()) return null
+    if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) return raw
+    if (looksLikeBase64Image(raw)) return "data:image/jpeg;base64,$raw"
+
+    val baseUrl = RetrofitClient.getBaseUrl(context)
+    val serverBase = if (baseUrl.endsWith("/api/")) {
+        baseUrl.removeSuffix("api/")
+    } else if (baseUrl.endsWith("/api")) {
+        baseUrl.removeSuffix("api")
+    } else {
+        baseUrl
+    }
+
+    val normalizedPath = if (raw.startsWith("/")) raw.substring(1) else raw
+    return serverBase.trimEnd('/') + "/" + normalizedPath
+}
+
+private fun looksLikeBase64Image(value: String): Boolean {
+    if (value.startsWith("/9j/") || value.startsWith("iVBOR") || value.startsWith("R0lGOD")) {
+        return true
+    }
+    return value.length > 100 && value.matches(Regex("^[A-Za-z0-9+/=\\s]+$"))
 }

@@ -21,6 +21,8 @@ class TokenManager(private val context: Context) {
         private val USER_NAME = stringPreferencesKey("user_name")
         private val USER_ROLE = stringPreferencesKey("user_role")
         private val USER_PROFILE_PIC = stringPreferencesKey("user_profile_pic")
+        private val USER_PHONE = stringPreferencesKey("user_phone")
+        private val USER_ADDRESS = stringPreferencesKey("user_address")
         private val GOOGLE_TOKEN = stringPreferencesKey("google_token")
     }
     
@@ -38,7 +40,9 @@ class TokenManager(private val context: Context) {
         email: String,
         fullName: String,
         role: String,
-        profilePic: String? = null
+        profilePic: String? = null,
+        phone: String? = null,
+        address: String? = null
     ) {
         context.dataStore.edit { preferences ->
             preferences[USER_ID] = userId.toString()
@@ -46,6 +50,8 @@ class TokenManager(private val context: Context) {
             preferences[USER_NAME] = fullName
             preferences[USER_ROLE] = role
             profilePic?.let { preferences[USER_PROFILE_PIC] = it }
+            phone?.let { preferences[USER_PHONE] = it }
+            address?.let { preferences[USER_ADDRESS] = it }
         }
     }
     
@@ -77,6 +83,14 @@ class TokenManager(private val context: Context) {
     
     fun getUserProfilePic(): Flow<String?> = context.dataStore.data.map { 
         it[USER_PROFILE_PIC] 
+    }
+
+    fun getUserPhone(): Flow<String?> = context.dataStore.data.map {
+        it[USER_PHONE]
+    }
+
+    fun getUserAddress(): Flow<String?> = context.dataStore.data.map {
+        it[USER_ADDRESS]
     }
     
     fun getGoogleToken(): Flow<String?> = context.dataStore.data.map { 

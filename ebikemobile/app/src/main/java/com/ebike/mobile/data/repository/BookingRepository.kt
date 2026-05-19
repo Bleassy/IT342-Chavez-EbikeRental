@@ -5,7 +5,7 @@ import com.ebike.mobile.api.BikeRentalApi
 import com.ebike.mobile.api.RetrofitClient
 import com.ebike.mobile.data.models.Booking
 import com.ebike.mobile.data.models.BookingDTO
-import kotlinx.coroutines.flow.first
+import java.time.LocalDateTime
 import timber.log.Timber
 
 class BookingRepository(private val context: Context) {
@@ -70,8 +70,26 @@ class BookingRepository(private val context: Context) {
             if (response.isSuccessful) {
                 response.body()?.let { apiResponse ->
                     if (apiResponse.success && apiResponse.data != null) {
-                        Timber.d("✅ Rental history fetched - ${apiResponse.data.size} bookings")
-                        Result.success(apiResponse.data)
+                        // Convert BookingDTO to Booking and calculate cost if needed
+                        val bookings = apiResponse.data.map { dto ->
+                            Booking(
+                                id = dto.id,
+                                userId = dto.userId,
+                                bikeId = dto.bikeId,
+                                startTime = dto.startTime,
+                                endTime = dto.endTime,
+                                status = dto.status,
+                                totalCost = dto.totalPrice ?: dto.totalCost,  // Use totalPrice from backend
+                                cancellationReason = dto.cancellationReason,
+                                createdAt = dto.createdAt,
+                                updatedAt = dto.updatedAt
+                            )
+                        }.sortedWith(
+                            compareByDescending<Booking> { parseDateTimeOrNull(it.createdAt) }
+                                .thenByDescending { it.id }
+                        )
+                        Timber.d("✅ Rental history fetched - ${bookings.size} bookings")
+                        Result.success(bookings)
                     } else {
                         Result.failure(Exception(apiResponse.message))
                     }
@@ -111,8 +129,12 @@ class BookingRepository(private val context: Context) {
             val response = api.getBookingDetail(bookingId)
             
             if (response.isSuccessful) {
-                response.body()?.let {
-                    Result.success(it)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success && apiResponse.data != null) {
+                        Result.success(mapToBooking(apiResponse.data))
+                    } else {
+                        Result.failure(Exception(apiResponse.message))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 Result.failure(Exception(response.errorBody()?.string() ?: "Failed to fetch booking"))
@@ -129,8 +151,12 @@ class BookingRepository(private val context: Context) {
             val response = api.cancelBooking(bookingId, request)
             
             if (response.isSuccessful) {
-                response.body()?.let {
-                    Result.success(it)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success) {
+                        getBookingDetail(bookingId)
+                    } else {
+                        Result.failure(Exception(apiResponse.message))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 Result.failure(Exception(response.errorBody()?.string() ?: "Cancellation failed"))
@@ -146,8 +172,12 @@ class BookingRepository(private val context: Context) {
             val response = api.completeBooking(bookingId)
             
             if (response.isSuccessful) {
-                response.body()?.let {
-                    Result.success(it)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success) {
+                        getBookingDetail(bookingId)
+                    } else {
+                        Result.failure(Exception(apiResponse.message))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 Result.failure(Exception(response.errorBody()?.string() ?: "Completion failed"))
@@ -195,6 +225,30 @@ class BookingRepository(private val context: Context) {
             )
         } catch (e: Exception) {
             Timber.e(e, "Error mapping booking")
+            null
+        }
+    }
+
+    private fun mapToBooking(dto: BookingDTO): Booking {
+        return Booking(
+            id = dto.id,
+            userId = dto.userId,
+            bikeId = dto.bikeId,
+            startTime = dto.startTime,
+            endTime = dto.endTime,
+            status = dto.status,
+            totalCost = dto.totalPrice ?: dto.totalCost,
+            cancellationReason = dto.cancellationReason,
+            createdAt = dto.createdAt,
+            updatedAt = dto.updatedAt
+        )
+    }
+
+    private fun parseDateTimeOrNull(value: String?): LocalDateTime? {
+        if (value.isNullOrBlank()) return null
+        return try {
+            LocalDateTime.parse(value)
+        } catch (_: Exception) {
             null
         }
     }
