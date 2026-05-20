@@ -1,0 +1,24 @@
+# Sample Render service configuration (edit before using)
+# Replace <your-github-repo> and branch as needed. This file is a sample to help configure Render's "Start from a Dockerfile" option.
+services:
+  - type: web
+    name: ebike-backend
+    env: docker
+    plan: free
+    repo: https://github.com/<your-org-or-user>/<your-repo>
+    branch: feature/mobile-profile-booking-realtime
+    dockerfilePath: backend/ebike/Dockerfile
+    buildCommand: ''
+    startCommand: ''
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: true
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: true
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: true
+      - key: SPRING_JWT_SECRET
+        sync: true
+
+# Note: Render will inject a `PORT` env var at runtime. The Dockerfile uses this value.
+# Edit this file to match your repo URL and preferred branch, or use the Render web UI to connect your GitHub repo and set environment variables/secrets.
