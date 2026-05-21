@@ -17,7 +17,7 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
-        buildConfigField "String", "BASE_URL", "\"http://192.168.254.101:8083/api/\""
+        buildConfigField "String", "BASE_URL", "\"https://it342-chavez-ebikerental.onrender.com/api/\""
         buildConfigField "String", "GOOGLE_CLIENT_ID", "\"868871618431-t2dk1r46f8lucjlco9buupl1mdecagv3.apps.googleusercontent.com\""
     }
 
