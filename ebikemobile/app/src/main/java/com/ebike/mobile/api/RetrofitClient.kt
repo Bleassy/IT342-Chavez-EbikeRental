@@ -14,7 +14,7 @@ object RetrofitClient {
     private var retrofit: Retrofit? = null
     private const val TAG = "RetrofitClient"
     
-    // Get base URL from SharedPreferences or default
+    // Get base URL from SharedPreferences or default (production URL)
     fun getBaseUrl(context: Context): String {
         val sharedPref = context.getSharedPreferences("ebike_settings", Context.MODE_PRIVATE)
         val savedUrl = sharedPref.getString("api_base_url", null)
@@ -23,9 +23,9 @@ object RetrofitClient {
             Log.d(TAG, "Using saved API URL: $savedUrl")
             savedUrl
         } else {
-            // Default - use your computer's actual IP address on the network
-            val defaultUrl = "http://192.168.254.101:8083/api/"
-            Log.d(TAG, "Using default API URL: $defaultUrl")
+            // Default production URL (Render backend) - MUST end with /
+            val defaultUrl = "https://it342-chavez-ebikerental.onrender.com/api/"
+            Log.d(TAG, "Using production API URL: $defaultUrl")
             defaultUrl
         }
     }
