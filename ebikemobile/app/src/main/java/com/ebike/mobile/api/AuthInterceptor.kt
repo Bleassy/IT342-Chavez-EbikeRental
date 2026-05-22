@@ -12,6 +12,16 @@ import timber.log.Timber
 class AuthInterceptor(private val context: Context) : Interceptor {
     
     private val tokenManager = TokenManager(context)
+
+    private fun normalizeToken(rawToken: String?): String? {
+        val cleaned = rawToken
+            ?.trim()
+            ?.removePrefix("Bearer ")
+            ?.removePrefix("bearer ")
+            ?.removeSurrounding("\"")
+            ?.trim()
+        return cleaned?.takeIf { it.isNotEmpty() }
+    }
     
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
@@ -20,7 +30,7 @@ class AuthInterceptor(private val context: Context) : Interceptor {
             // Get token synchronously for the interceptor
             val token = runBlocking {
                 try {
-                    val t = tokenManager.getAccessToken().first()
+                    val t = normalizeToken(tokenManager.getAccessToken().first())
                     Timber.d("🔑 Token retrieved: ${if (t.isNullOrEmpty()) "EMPTY/NULL" else "OK (${t?.length} chars)"}") 
                     t
                 } catch (e: Exception) {
@@ -33,7 +43,7 @@ class AuthInterceptor(private val context: Context) : Interceptor {
             val requestBuilder = originalRequest.newBuilder()
             
             if (token != null && token.isNotEmpty()) {
-                requestBuilder.addHeader("Authorization", "Bearer $token")
+                requestBuilder.header("Authorization", "Bearer $token")
                 Timber.d("✅ Authorization header added for: ${originalRequest.url.encodedPath}")
             } else {
                 Timber.e("❌ NO TOKEN FOUND - Request to: ${originalRequest.url.encodedPath}")

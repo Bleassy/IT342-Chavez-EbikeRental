@@ -5,12 +5,60 @@ import com.ebike.mobile.api.BikeRentalApi
 import com.ebike.mobile.api.RetrofitClient
 import com.ebike.mobile.data.local.TokenManager
 import com.ebike.mobile.data.models.*
+import kotlinx.coroutines.flow.first
 import timber.log.Timber
 
 class AuthRepository(private val context: Context) {
     
     private val api by lazy { RetrofitClient.getClient(context).create(BikeRentalApi::class.java) }
     private val tokenManager = TokenManager(context)
+
+    private fun normalizeToken(rawToken: String?): String? {
+        val cleaned = rawToken
+            ?.trim()
+            ?.removePrefix("Bearer ")
+            ?.removePrefix("bearer ")
+            ?.removeSurrounding("\"")
+            ?.trim()
+        return cleaned?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun splitFullName(fullName: String): Pair<String, String> {
+        val parts = fullName.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        return when {
+            parts.isEmpty() -> "" to ""
+            parts.size == 1 -> parts.first() to ""
+            else -> parts.first() to parts.drop(1).joinToString(" ")
+        }
+    }
+
+    private fun mapBackendUser(profile: BackendUserProfileDto): User {
+        val fullName = listOfNotNull(profile.firstName, profile.lastName)
+            .joinToString(" ")
+            .trim()
+
+        return User(
+            id = profile.id ?: 0L,
+            email = profile.email.orEmpty(),
+            fullName = fullName,
+            phone = profile.phone,
+            address = profile.address,
+            profilePic = profile.profilePictureUrl,
+            nickname = profile.nickname,
+            role = profile.role ?: "CUSTOMER",
+            createdAt = profile.createdAt,
+            updatedAt = profile.updatedAt
+        )
+    }
+
+    private suspend fun getAuthorizationHeader(): String {
+        val token = normalizeToken(tokenManager.getAccessToken().first())
+        return if (!token.isNullOrBlank()) {
+            "Bearer $token"
+        } else {
+            throw IllegalStateException("No access token available. Please log in again.")
+        }
+    }
     
     suspend fun login(email: String, password: String): Result<LoginResponse> {
         return try {
@@ -161,15 +209,20 @@ class AuthRepository(private val context: Context) {
     suspend fun uploadProfilePicture(base64Image: String): Result<User> {
         return try {
             Timber.d("Uploading profile picture...")
+            val authorization = getAuthorizationHeader()
             val request = mapOf(
                 "profilePic" to base64Image
             )
-            val response = api.uploadProfilePic(request)
+            val response = api.uploadProfilePic(authorization, request)
             
             if (response.isSuccessful) {
-                response.body()?.let { user ->
-                    Timber.d("✅ Profile picture uploaded successfully")
-                    Result.success(user)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success && apiResponse.data != null) {
+                        Timber.d("✅ Profile picture uploaded successfully")
+                        Result.success(mapBackendUser(apiResponse.data))
+                    } else {
+                        Result.failure(Exception(apiResponse.message.ifBlank { "Upload failed" }))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -185,12 +238,30 @@ class AuthRepository(private val context: Context) {
     suspend fun updateProfile(user: User): Result<User> {
         return try {
             Timber.d("Updating profile for: ${user.email}")
-            val response = api.updateProfile(user)
+            val authorization = getAuthorizationHeader()
+            val (firstName, lastName) = splitFullName(user.fullName)
+            val request = BackendUserProfileDto(
+                id = user.id,
+                email = user.email,
+                firstName = firstName,
+                lastName = lastName,
+                phone = user.phone,
+                address = user.address,
+                nickname = user.nickname,
+                profilePictureUrl = user.profilePic,
+                role = user.role
+            )
+            val response = api.updateProfile(authorization, request)
 
             if (response.isSuccessful) {
-                response.body()?.let { updatedUser ->
-                    Timber.d("✅ Profile updated successfully: ${updatedUser.email}")
-                    Result.success(updatedUser)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success && apiResponse.data != null) {
+                        val mappedUser = mapBackendUser(apiResponse.data)
+                        Timber.d("✅ Profile updated successfully: ${mappedUser.email}")
+                        Result.success(mappedUser)
+                    } else {
+                        Result.failure(Exception(apiResponse.message.ifBlank { "Profile update failed" }))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -206,12 +277,18 @@ class AuthRepository(private val context: Context) {
     suspend fun getProfile(): Result<User> {
         return try {
             Timber.d("Fetching user profile...")
-            val response = api.getUserProfile()
+            val authorization = getAuthorizationHeader()
+            val response = api.getUserProfile(authorization)
             
             if (response.isSuccessful) {
-                response.body()?.let { user ->
-                    Timber.d("✅ Profile fetched successfully: ${user.email}")
-                    Result.success(user)
+                response.body()?.let { apiResponse ->
+                    if (apiResponse.success && apiResponse.data != null) {
+                        val mappedUser = mapBackendUser(apiResponse.data)
+                        Timber.d("✅ Profile fetched successfully: ${mappedUser.email}")
+                        Result.success(mappedUser)
+                    } else {
+                        Result.failure(Exception(apiResponse.message.ifBlank { "Failed to fetch profile" }))
+                    }
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 val errorBody = response.errorBody()?.string()

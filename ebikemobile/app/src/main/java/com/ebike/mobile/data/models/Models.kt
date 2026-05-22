@@ -20,6 +20,21 @@ data class User(
     val updatedAt: String? = null
 ) : Parcelable
 
+data class BackendUserProfileDto(
+    val id: Long? = null,
+    val email: String? = null,
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val phone: String? = null,
+    val address: String? = null,
+    val nickname: String? = null,
+    val profilePictureUrl: String? = null,
+    val role: String? = null,
+    val isActive: Boolean? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
+)
+
 @Parcelize
 data class Bike(
     val id: Long,

@@ -161,13 +161,21 @@ class BikeRepository(private val context: Context) {
     
     private fun mapToBike(map: Map<String, Any>): Bike? {
         return try {
+            val brand = map["brand"] as? String
+            val model = map["model"] as? String
+            val bikeCode = map["bikeCode"] as? String
+            val displayName = listOfNotNull(brand, model)
+                .joinToString(" ")
+                .trim()
+                .ifBlank { bikeCode ?: "Bike" }
+
             Bike(
                 id = (map["id"] as? Number)?.toLong() ?: return null,
-                name = map["name"] as? String ?: map["bikeCode"] as? String,
+                name = displayName,
                 description = map["description"] as? String,
-                model = map["model"] as? String,
-                brand = map["brand"] as? String,
-                bikeCode = map["bikeCode"] as? String,
+                model = model,
+                brand = brand,
+                bikeCode = bikeCode,
                 color = map["color"] as? String,
                 year = (map["year"] as? Number)?.toInt(),
                 type = map["type"] as? String,
