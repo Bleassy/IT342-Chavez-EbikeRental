@@ -11,7 +11,9 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,12 +23,33 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.ebike.mobile.ui.viewmodels.AuthViewModel
+import com.ebike.mobile.ui.viewmodels.BookingViewModel
 
 @Composable
 fun DashboardScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel
 ) {
+    val context = LocalContext.current
+    val bookingViewModel = remember { BookingViewModel(context) }
+    val bookings by bookingViewModel.bookings.collectAsState()
+
+    LaunchedEffect(Unit) {
+        bookingViewModel.getRentalHistory()
+    }
+
+    val activeRentals = remember(bookings) {
+        derivedStateOf {
+            bookings.count { booking -> booking.status in listOf("PENDING", "CONFIRMED", "APPROVED", "ACTIVE") }
+        }
+    }
+
+    val completedRentals = remember(bookings) {
+        derivedStateOf {
+            bookings.count { booking -> booking.status == "COMPLETED" }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -70,8 +93,8 @@ fun DashboardScreen(
                 .padding(24.dp, 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            StatCard("0", "Active Rentals", Modifier.weight(1f))
-            StatCard("0", "Completed", Modifier.weight(1f))
+            StatCard(activeRentals.value.toString(), "Active Rentals", Modifier.weight(1f))
+            StatCard(completedRentals.value.toString(), "Completed", Modifier.weight(1f))
         }
         
         // Quick Actions

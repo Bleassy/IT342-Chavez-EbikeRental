@@ -18,13 +18,19 @@ interface BikeRentalApi {
     
     // Users
     @GET("profile")
-    suspend fun getUserProfile(): Response<User>
+    suspend fun getUserProfile(@Header("Authorization") authorization: String): Response<ApiResponse<BackendUserProfileDto>>
     
     @PUT("profile")
-    suspend fun updateProfile(@Body user: User): Response<User>
+    suspend fun updateProfile(
+        @Header("Authorization") authorization: String,
+        @Body user: BackendUserProfileDto
+    ): Response<ApiResponse<BackendUserProfileDto>>
     
     @POST("profile/pic")
-    suspend fun uploadProfilePic(@Body request: Map<String, String>): Response<User>
+    suspend fun uploadProfilePic(
+        @Header("Authorization") authorization: String,
+        @Body request: Map<String, String>
+    ): Response<ApiResponse<BackendUserProfileDto>>
     
     // Bikes
     @GET("bikes")

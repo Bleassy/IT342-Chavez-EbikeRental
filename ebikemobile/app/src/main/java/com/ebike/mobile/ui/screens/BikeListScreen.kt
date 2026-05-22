@@ -14,6 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -31,6 +33,20 @@ fun BikeListScreen(navController: NavHostController) {
     val bikes by viewModel.bikes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedStatus by remember { mutableStateOf("ALL") }
+
+    val filteredBikes by remember(bikes, searchQuery, selectedStatus) {
+        derivedStateOf {
+            bikes.filter { bike ->
+                val matchesStatus = selectedStatus == "ALL" || bike.status.equals(selectedStatus, ignoreCase = true)
+                val matchesQuery = searchQuery.isBlank() || bike.name
+                    ?.startsWith(searchQuery.trim(), ignoreCase = true) == true
+
+                matchesStatus && matchesQuery
+            }
+        }
+    }
     
     LaunchedEffect(Unit) {
         viewModel.getAllBikes()
@@ -50,35 +66,96 @@ fun BikeListScreen(navController: NavHostController) {
             shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
             shadowElevation = 8.dp
         ) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                contentAlignment = Alignment.Center
             ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
                 Text(
                     text = "Available Bikes",
                     style = MaterialTheme.typography.headlineSmall,
                     color = Color.White
                 )
-                IconButton(onClick = { /* TODO: Search */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = Color.White
+            }
+        }
+        
+        // Search and Filters
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            shadowElevation = 2.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search bikes"
+                        )
+                    },
+                    trailingIcon = if (searchQuery.isNotBlank()) {
+                        {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Clear search"
+                                )
+                            }
+                        }
+                    } else null,
+                    placeholder = { Text("Search bike name") },
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StatusFilterButton(
+                        label = "All",
+                        selected = selectedStatus == "ALL",
+                        onClick = { selectedStatus = "ALL" },
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatusFilterButton(
+                        label = "Available",
+                        selected = selectedStatus == "AVAILABLE",
+                        onClick = { selectedStatus = "AVAILABLE" },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StatusFilterButton(
+                        label = "Rented",
+                        selected = selectedStatus == "RENTED",
+                        onClick = { selectedStatus = "RENTED" },
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatusFilterButton(
+                        label = "Maintenance",
+                        selected = selectedStatus == "MAINTENANCE",
+                        onClick = { selectedStatus = "MAINTENANCE" },
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
         }
-        
+
         // Content
         when {
             isLoading -> {
@@ -105,12 +182,15 @@ fun BikeListScreen(navController: NavHostController) {
                     }
                 }
             }
-            bikes.isEmpty() -> {
+            filteredBikes.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No bikes available", textAlign = TextAlign.Center)
+                    Text(
+                        text = if (bikes.isEmpty()) "No bikes available" else "No bikes match your search/filter",
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
             else -> {
@@ -120,7 +200,7 @@ fun BikeListScreen(navController: NavHostController) {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(bikes) { bike ->
+                    items(filteredBikes) { bike ->
                         BikeCard(bike) {
                             navController.navigate(Screen.BikeDetail.createRoute(bike.id))
                         }
@@ -134,7 +214,7 @@ fun BikeListScreen(navController: NavHostController) {
 @Composable
 fun BikeCard(bike: Bike, onClick: () -> Unit) {
     val context = LocalContext.current
-    val bikeImage = resolveBikeImageUrl(context, bike)
+    val bikeImage = resolveBikeImageModel(context, bike)
 
     Surface(
         modifier = Modifier
@@ -158,7 +238,7 @@ fun BikeCard(bike: Bike, onClick: () -> Unit) {
                     .clip(RoundedCornerShape(10.dp)),
                 color = Color(0xFFE8F7F1)
             ) {
-                if (!bikeImage.isNullOrBlank()) {
+                if (bikeImage != null) {
                     AsyncImage(
                         model = bikeImage,
                         contentDescription = bike.name ?: "Bike",
@@ -234,11 +314,12 @@ fun BikeCard(bike: Bike, onClick: () -> Unit) {
     }
 }
 
-private fun resolveBikeImageUrl(context: android.content.Context, bike: Bike): String? {
+private fun resolveBikeImageModel(context: android.content.Context, bike: Bike): Any? {
     val raw = bike.imageUrl ?: bike.image
     if (raw.isNullOrBlank()) return null
-    if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) return raw
-    if (looksLikeBase64Image(raw)) return "data:image/jpeg;base64,$raw"
+    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw
+    if (raw.startsWith("data:")) return decodeBase64Image(raw)
+    decodeBase64Image(raw)?.let { return it }
 
     val baseUrl = RetrofitClient.getBaseUrl(context)
     val serverBase = if (baseUrl.endsWith("/api/")) {
@@ -247,10 +328,33 @@ private fun resolveBikeImageUrl(context: android.content.Context, bike: Bike): S
         baseUrl.removeSuffix("api")
     } else {
         baseUrl
-    }
+    }.trimEnd('/')
 
-    val normalizedPath = if (raw.startsWith("/")) raw.substring(1) else raw
-    return serverBase.trimEnd('/') + "/" + normalizedPath
+    return when {
+        raw.startsWith("/api/") -> serverBase + raw
+        raw.startsWith("api/") -> serverBase + "/" + raw
+        raw.startsWith("/uploads/") -> serverBase + raw
+        raw.startsWith("uploads/") -> serverBase + "/" + raw
+        raw.startsWith("/") -> serverBase + raw
+        else -> serverBase + "/" + raw
+    }
+}
+
+private fun decodeBase64Image(raw: String): android.graphics.Bitmap? {
+    return try {
+        val cleaned = raw
+            .substringAfter("base64,", raw)
+            .replace("\n", "")
+            .replace("\r", "")
+            .trim()
+
+        if (!looksLikeBase64Image(cleaned)) return null
+
+        val bytes = Base64.decode(cleaned, Base64.DEFAULT)
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    } catch (e: Exception) {
+        null
+    }
 }
 
 private fun looksLikeBase64Image(value: String): Boolean {
@@ -258,4 +362,25 @@ private fun looksLikeBase64Image(value: String): Boolean {
         return true
     }
     return value.length > 100 && value.matches(Regex("^[A-Za-z0-9+/=\\s]+$"))
+}
+
+@Composable
+private fun StatusFilterButton(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (selected) Color(0xFF10B981) else Color(0xFFF3F4F6),
+            contentColor = if (selected) Color.White else Color(0xFF374151)
+        ),
+        shape = RoundedCornerShape(10.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Text(label, style = MaterialTheme.typography.labelMedium)
+    }
 }

@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -30,10 +32,24 @@ import com.ebike.mobile.ui.viewmodels.AuthViewModel
 import com.ebike.mobile.ui.viewmodels.BikeViewModel
 import com.ebike.mobile.ui.viewmodels.BookingViewModel
 import com.ebike.mobile.utils.ImageUtils
+import android.app.TimePickerDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.rememberUpdatedState
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
     val context = LocalContext.current
     val bikeViewModel = remember { BikeViewModel(context) }
@@ -50,6 +66,10 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
     var selectedEndTime by remember { mutableStateOf("") }
     var hours by remember { mutableStateOf(1) }
     var bookingError by remember { mutableStateOf("") }
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var selectedTime by remember { mutableStateOf(LocalTime.now().withSecond(0).withNano(0)) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     
     LaunchedEffect(bikeId) {
         bikeViewModel.getBikeDetail(bikeId)
@@ -115,7 +135,7 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
             }
         } else if (selectedBike != null) {
             val bike = selectedBike!!
-            val bikeImage = resolveBikeImageUrl(context, bike.imageUrl ?: bike.image)
+            val bikeImage = resolveBikeImageModel(context, bike.imageUrl ?: bike.image)
             
             Column(
                 modifier = Modifier
@@ -135,7 +155,7 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (!bikeImage.isNullOrBlank()) {
+                        if (bikeImage != null) {
                             AsyncImage(
                                 model = bikeImage,
                                 contentDescription = bike.name ?: "Bike",
@@ -346,6 +366,53 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
     }
     
     // Booking Date/Time Picker Dialog
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = datePickerState.selectedDateMillis
+                    if (millis != null) {
+                        selectedDate = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("Select")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                selectedTime = LocalTime.of(hourOfDay, minute)
+                showTimePicker = false
+            },
+            selectedTime.hour,
+            selectedTime.minute,
+            false
+        ).show()
+        showTimePicker = false
+    }
+
     if (showDateTimePicker && selectedBike != null) {
         val bikeForBooking = selectedBike!!
         val bikeDisplayName = bikeForBooking.name
@@ -394,6 +461,20 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                         text = "Duration (hours)",
                         style = MaterialTheme.typography.labelMedium
                     )
+
+                    OutlinedButton(
+                        onClick = { showDatePicker = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Pickup date: ${selectedDate.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))}")
+                    }
+
+                    OutlinedButton(
+                        onClick = { showTimePicker = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Pickup time: ${selectedTime.format(DateTimeFormatter.ofPattern("hh:mm a"))}")
+                    }
                     
                     Row(
                         modifier = Modifier
@@ -412,10 +493,10 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                                 containerColor = Color(0xFF10B981)
                             )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Remove,
-                                contentDescription = "Decrease duration",
-                                tint = Color.White
+                            Text(
+                                text = "-",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleLarge
                             )
                         }
                         
@@ -436,10 +517,10 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                                 containerColor = Color(0xFF10B981)
                             )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Increase duration",
-                                tint = Color.White
+                            Text(
+                                text = "+",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleLarge
                             )
                         }
                     }
@@ -457,16 +538,14 @@ fun BikeDetailScreen(navController: NavHostController, bikeId: Long) {
                     onClick = {
                         if (hours > 0) {
                             scope.launch {
-                                // Generate current timestamp for start time
-                                val now = java.time.LocalDateTime.now()
-                                val startTime = now.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                                // Add hours for end time
-                                val endTime = now.plusHours(hours.toLong()).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                                val startDateTime = LocalDateTime.of(selectedDate, selectedTime)
+                                val endDateTime = startDateTime.plusHours(hours.toLong())
+                                val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
                                 
                                 bookingViewModel.createBooking(
                                     bikeId = bikeForBooking.id,
-                                    startTime = startTime,
-                                    endTime = endTime
+                                    startTime = startDateTime.format(formatter),
+                                    endTime = endDateTime.format(formatter)
                                 )
                                 showDateTimePicker = false
                                 hours = 1
@@ -1066,6 +1145,10 @@ fun ProfileScreen(
     var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var uploadingImage by remember { mutableStateOf(false) }
     var uploadError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        authViewModel.refreshUserProfile()
+    }
     
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -1119,6 +1202,8 @@ fun ProfileScreen(
             Timber.w("⚠️ currentUser is NULL - not logged in")
         }
     }
+
+    val profileImageModel = resolveProfileImageUrl(context, currentUser?.profilePic)
     
     Column(
         modifier = Modifier
@@ -1226,10 +1311,10 @@ fun ProfileScreen(
                                 .clip(RoundedCornerShape(50)),
                             contentScale = ContentScale.Crop
                         )
-                    } else if (!currentUser?.profilePic.isNullOrEmpty()) {
+                    } else if (profileImageModel != null) {
                         // Show uploaded profile picture from backend
                         AsyncImage(
-                            model = currentUser?.profilePic,
+                            model = profileImageModel,
                             contentDescription = "Profile Picture",
                             modifier = Modifier
                                 .fillMaxSize()
@@ -1556,7 +1641,56 @@ fun calculateCost(booking: com.ebike.mobile.data.models.Booking): String {
     }
 }
 
-private fun resolveBikeImageUrl(context: android.content.Context, rawImage: String?): String? {
+private fun resolveBikeImageModel(context: android.content.Context, rawImage: String?): Any? {
+    if (rawImage.isNullOrBlank()) return null
+    if (rawImage.startsWith("http://") || rawImage.startsWith("https://")) return rawImage
+    if (rawImage.startsWith("data:")) return decodeBase64Image(rawImage)
+    decodeBase64Image(rawImage)?.let { return it }
+
+    val baseUrl = RetrofitClient.getBaseUrl(context)
+    val serverBase = if (baseUrl.endsWith("/api/")) {
+        baseUrl.removeSuffix("api/")
+    } else if (baseUrl.endsWith("/api")) {
+        baseUrl.removeSuffix("api")
+    } else {
+        baseUrl
+    }.trimEnd('/')
+
+    return when {
+        rawImage.startsWith("/api/") -> serverBase + rawImage
+        rawImage.startsWith("api/") -> serverBase + "/" + rawImage
+        rawImage.startsWith("/uploads/") -> serverBase + rawImage
+        rawImage.startsWith("uploads/") -> serverBase + "/" + rawImage
+        rawImage.startsWith("/") -> serverBase + rawImage
+        else -> serverBase + "/" + rawImage
+    }
+}
+
+private fun decodeBase64Image(raw: String): android.graphics.Bitmap? {
+    return try {
+        val cleaned = raw
+            .substringAfter("base64,", raw)
+            .replace("\n", "")
+            .replace("\r", "")
+            .trim()
+
+        if (!looksLikeBase64Image(cleaned)) return null
+
+        val bytes = Base64.decode(cleaned, Base64.DEFAULT)
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    } catch (e: Exception) {
+        null
+    }
+}
+
+private fun looksLikeBase64Image(value: String): Boolean {
+    if (value.startsWith("/9j/") || value.startsWith("iVBOR") || value.startsWith("R0lGOD")) {
+        return true
+    }
+    return value.length > 100 && value.matches(Regex("^[A-Za-z0-9+/=\\s]+$"))
+}
+
+private fun resolveProfileImageUrl(context: android.content.Context, rawImage: String?): String? {
     if (rawImage.isNullOrBlank()) return null
     if (rawImage.startsWith("http://") || rawImage.startsWith("https://") || rawImage.startsWith("data:")) return rawImage
     if (looksLikeBase64Image(rawImage)) return "data:image/jpeg;base64,$rawImage"
@@ -1572,11 +1706,4 @@ private fun resolveBikeImageUrl(context: android.content.Context, rawImage: Stri
 
     val normalizedPath = if (rawImage.startsWith('/')) rawImage.substring(1) else rawImage
     return serverBase.trimEnd('/') + "/" + normalizedPath
-}
-
-private fun looksLikeBase64Image(value: String): Boolean {
-    if (value.startsWith("/9j/") || value.startsWith("iVBOR") || value.startsWith("R0lGOD")) {
-        return true
-    }
-    return value.length > 100 && value.matches(Regex("^[A-Za-z0-9+/=\\s]+$"))
 }

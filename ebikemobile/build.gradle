@@ -4,6 +4,13 @@ plugins {
     id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
 }
 
+def externalBuildDir = new File(System.getProperty('user.home'), '.ebikemobile-build')
+rootProject.buildDir = externalBuildDir
+
+subprojects {
+    buildDir = new File(externalBuildDir, project.name)
+}
+
 task clean(type: Delete) {
-    delete rootProject.buildDir
+    delete externalBuildDir
 }
